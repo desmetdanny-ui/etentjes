@@ -234,6 +234,116 @@
     color:#f6ead9;
     margin-right:6px;
   }
+
+  .tabs{
+    display:flex;
+    gap:0;
+    padding:12px 16px 0;
+  }
+  .tab-btn{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    padding:11px 8px;
+    border:1px solid var(--border);
+    background:var(--paper-dark);
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .tab-btn:first-child{ border-radius:10px 0 0 10px; border-right:none; }
+  .tab-btn:last-child{ border-radius:0 10px 10px 0; }
+  .tab-btn.active{
+    background:var(--wine);
+    color:#f6ead9;
+    border-color:var(--wine);
+    font-weight:600;
+  }
+
+  .shop-pick-list{
+    padding:14px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .shop-pick-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 6px rgba(58,46,34,0.08);
+  }
+  .shop-pick-card .sp-name{
+    font-size:1.1em;
+    color:var(--wine);
+  }
+  .shop-pick-card .sp-meta{
+    font-size:0.8em;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .shop-pick-card .sp-count{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    padding:6px 12px;
+    border-radius:14px;
+    white-space:nowrap;
+  }
+
+  .back-btn{
+    background:none;
+    border:none;
+    color:var(--wine);
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    padding:14px 16px 0;
+    cursor:pointer;
+  }
+  .shop-full-title{
+    color:var(--wine);
+    padding:6px 16px 0;
+    font-weight:400;
+    font-size:1.4em;
+  }
+  .progress-wrap{ padding:10px 16px 4px; }
+  .progress-bar-bg{
+    background:var(--paper-dark);
+    border-radius:10px;
+    height:10px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    background:var(--green);
+    height:100%;
+    width:0%;
+    transition:width 0.25s ease;
+  }
+
+  .shop-list.big{
+    padding:8px 16px 30px;
+    margin:0;
+  }
+  .shop-list.big .shop-item{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 14px;
+    margin-bottom:8px;
+    font-size:1.08em;
+  }
+  .shop-list.big .shop-box{
+    width:26px;
+    height:26px;
+    min-width:26px;
+    border-radius:7px;
+  }
+  .shop-list.big .shop-item.checked{
+    opacity:0.6;
+  }
   .card-actions{
     display:flex;
     gap:10px;
@@ -361,6 +471,17 @@
   <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
 </header>
 
+<header>
+  <h1>🍷 Dineetjes</h1>
+  <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabOverzicht" onclick="switchTab('overzicht')">📋 Overzicht</button>
+  <button class="tab-btn" id="tabBoodschappen" onclick="switchTab('boodschappen')">🛒 Boodschappen</button>
+</div>
+
+<div id="viewOverzicht">
 <div class="toolbar">
   <select id="filterType">
     <option value="alle">Alle etentjes</option>
@@ -372,6 +493,19 @@
 <div class="sync-note" id="syncNote">Lokale opslag (Firebase nog niet gekoppeld)</div>
 
 <div id="list"></div>
+</div>
+
+<div id="viewBoodschappen" style="display:none;">
+  <div id="shopPickerScreen">
+    <div class="shop-pick-list" id="shopPickList"></div>
+  </div>
+  <div id="shopFullScreen" style="display:none;">
+    <button class="back-btn" onclick="closeShopFull()">← terug</button>
+    <h2 id="shopFullTitle" class="shop-full-title"></h2>
+    <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="shopProgressBar"></div></div></div>
+    <ul class="shop-list big" id="shopFullList"></ul>
+  </div>
+</div>
 
 <button class="fab" onclick="openEditor()">+</button>
 
@@ -617,7 +751,7 @@ function render(){
           ${e.dessert ? `<div class="section-label">Dessert</div><div class="menu-line">${nl2br(e.dessert)}</div>` : ''}
           ${e.wijnen ? `<div class="section-label">Wijnen</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
           ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
-          ${renderShopList(e)}
+          ${itemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${itemsOf(e).length} items)</button></div>` : ''}
           ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
 
           <div class="card-actions">
@@ -687,6 +821,85 @@ function nl2br(str){
 }
 
 document.getElementById('filterType').addEventListener('change', render);
+
+/* Tabs */
+function switchTab(tab){
+  document.getElementById('tabOverzicht').classList.toggle('active', tab==='overzicht');
+  document.getElementById('tabBoodschappen').classList.toggle('active', tab==='boodschappen');
+  document.getElementById('viewOverzicht').style.display = tab==='overzicht' ? 'block' : 'none';
+  document.getElementById('viewBoodschappen').style.display = tab==='boodschappen' ? 'block' : 'none';
+  if (tab==='boodschappen'){ renderShopPicker(); }
+}
+
+function itemsOf(e){
+  return (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
+}
+
+function renderShopPicker(){
+  document.getElementById('shopFullScreen').style.display = 'none';
+  document.getElementById('shopPickerScreen').style.display = 'block';
+  const pickList = document.getElementById('shopPickList');
+  const withItems = entries.filter(e => itemsOf(e).length > 0);
+  if (!withItems.length){
+    pickList.innerHTML = '<div class="empty">Nog geen boodschappenlijstjes. Voeg items toe bij een etentje via "Bewerken".</div>';
+    return;
+  }
+  withItems.sort((a,b)=> new Date(a.date) - new Date(b.date));
+  pickList.innerHTML = withItems.map(e => {
+    const items = itemsOf(e);
+    const checked = e.boodschappenChecked || {};
+    const doneCount = items.filter((_,i)=>checked[i]).length;
+    const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long'}) : '';
+    return `<div class="shop-pick-card" onclick="openShopFull('${e.id}')">
+      <div>
+        <div class="sp-name">${escapeHtml(e.name||'(zonder naam)')}</div>
+        <div class="sp-meta">${dateFmt}</div>
+      </div>
+      <div class="sp-count">${doneCount}/${items.length}</div>
+    </div>`;
+  }).join('');
+}
+
+let activeShopEntryId = null;
+
+function openShopFull(entryId){
+  activeShopEntryId = entryId;
+  document.getElementById('shopPickerScreen').style.display = 'none';
+  document.getElementById('shopFullScreen').style.display = 'block';
+  renderShopFull();
+}
+function closeShopFull(){
+  activeShopEntryId = null;
+  renderShopPicker();
+}
+
+function renderShopFull(){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) { closeShopFull(); return; }
+  document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
+  const items = itemsOf(e);
+  const checked = e.boodschappenChecked || {};
+  const doneCount = items.filter((_,i)=>checked[i]).length;
+  const pct = items.length ? (doneCount/items.length)*100 : 0;
+  document.getElementById('shopProgressBar').style.width = pct + '%';
+
+  document.getElementById('shopFullList').innerHTML = items.map((item,i) => {
+    const isDone = !!checked[i];
+    return `<li class="shop-item ${isDone?'checked':''}" onclick="toggleShopItemFull(${i})">
+      <span class="shop-box">${isDone?'✓':''}</span>
+      <span class="txt">${escapeHtml(item)}</span>
+    </li>`;
+  }).join('');
+}
+
+function toggleShopItemFull(index){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  e.boodschappenChecked = e.boodschappenChecked || {};
+  e.boodschappenChecked[index] = !e.boodschappenChecked[index];
+  persistOne(e);
+  renderShopFull();
+}
 
 /* Editor */
 function openEditor(id){
