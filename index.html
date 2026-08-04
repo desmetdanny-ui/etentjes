@@ -1004,15 +1004,22 @@ function shopItemToggle(e, item){
 
 function renderWineList(e){
   const wines = e.wijnenLijst || [];
-  const total = wines.reduce((s,w)=> s + (Number(w.prijs)||0), 0);
-  const rows = wines.map((w,i) => `
+  const total = wines.reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const rows = wines.map((w,i) => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs
+      ? (aantal > 1 ? `${aantal}× € ${Number(w.prijs).toFixed(2).replace('.',',')} = € ${lijnTotaal.toFixed(2).replace('.',',')}` : `€ ${Number(w.prijs).toFixed(2).replace('.',',')}`)
+      : (aantal > 1 ? `${aantal}× in huis` : 'in huis');
+    return `
     <div class="wine-row">
       <span class="wr-box ${w.gekocht?'checked':''}" onclick="event.stopPropagation(); toggleWineGekocht('${e.id}', ${i})">${w.gekocht?'✓':''}</span>
       <span class="wr-name ${w.gekocht?'wr-done':''}">🍷 ${escapeHtml(w.naam)}</span>
-      <span class="wr-price">${w.prijs ? '€ ' + Number(w.prijs).toFixed(2).replace('.',',') : 'in huis'}</span>
+      <span class="wr-price">${priceLabel}</span>
       <span class="wr-cart ${w.inBoodschappen?'active':''}" onclick="event.stopPropagation(); toggleWineInBoodschappen('${e.id}', ${i})" title="In boodschappenlijst">🛒</span>
       <span class="wr-del" onclick="event.stopPropagation(); deleteWine('${e.id}', ${i})">verwijder</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const totalRow = wines.length ? `<div class="wine-total"><span>Totaal</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
   return `
     <div class="section-label">Wijnen</div>
@@ -1021,7 +1028,8 @@ function renderWineList(e){
       ${totalRow}
       <div class="wine-add-row" onclick="event.stopPropagation();">
         <input type="text" class="wa-name" id="wa_name_${e.id}" placeholder="Naam wijn">
-        <input type="text" class="wa-price" id="wa_price_${e.id}" placeholder="€">
+        <input type="number" min="1" class="wa-qty" id="wa_qty_${e.id}" placeholder="Aantal" value="1">
+        <input type="text" class="wa-price" id="wa_price_${e.id}" placeholder="€ per fles">
         <button onclick="addWine('${e.id}')">+</button>
       </div>
     </div>`;
@@ -1032,12 +1040,15 @@ function addWine(entryId){
   if (!entry) return;
   const nameInp = document.getElementById('wa_name_'+entryId);
   const priceInp = document.getElementById('wa_price_'+entryId);
+  const qtyInp = document.getElementById('wa_qty_'+entryId);
   const naam = nameInp.value.trim();
   if (!naam) return;
   const prijsRaw = priceInp.value.trim().replace(',', '.');
   const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  const aantalRaw = parseInt(qtyInp.value.trim());
+  const aantal = (aantalRaw && aantalRaw > 0) ? aantalRaw : 1;
   entry.wijnenLijst = entry.wijnenLijst || [];
-  entry.wijnenLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs, gekocht: false, inBoodschappen: true});
+  entry.wijnenLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs, aantal, gekocht: false, inBoodschappen: true});
   persistOne(entry);
   reRenderKeepOpen(entryId);
 }
@@ -1068,14 +1079,21 @@ function deleteWine(entryId, index){
 
 function renderFoodList(e){
   const items = e.voedingLijst || [];
-  const total = items.reduce((s,w)=> s + (Number(w.prijs)||0), 0);
-  const rows = items.map((w,i) => `
+  const total = items.reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const rows = items.map((w,i) => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs
+      ? (aantal > 1 ? `${aantal}× € ${Number(w.prijs).toFixed(2).replace('.',',')} = € ${lijnTotaal.toFixed(2).replace('.',',')}` : `€ ${Number(w.prijs).toFixed(2).replace('.',',')}`)
+      : '—';
+    return `
     <div class="wine-row">
       <span class="wr-name">🥕 ${escapeHtml(w.naam)}</span>
-      <span class="wr-price">${w.prijs ? '€ ' + Number(w.prijs).toFixed(2).replace('.',',') : '—'}</span>
+      <span class="wr-price">${priceLabel}</span>
       <span class="wr-del" onclick="event.stopPropagation(); deleteFood('${e.id}', ${i})">verwijder</span>
-    </div>`).join('');
-  const wineTotal = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0), 0);
+    </div>`;
+  }).join('');
+  const wineTotal = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
   const totalRow = items.length ? `<div class="wine-total"><span>Totaal voeding</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
   const grandTotal = (items.length || (e.wijnenLijst||[]).length) ? `<div class="wine-total" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px;"><span>Totaal etentje (eten + wijn)</span><span>€ ${(total+wineTotal).toFixed(2).replace('.',',')}</span></div>` : '';
   return `
@@ -1085,7 +1103,7 @@ function renderFoodList(e){
       ${totalRow}
       ${grandTotal}
       <div class="wine-add-row" onclick="event.stopPropagation();">
-        <input type="text" class="wa-name" id="fa_name_${e.id}" placeholder="Ingrediënt / post">
+        <input type="text" class="wa-name" id="fa_name_${e.id}" placeholder="Ingrediënt / post (bv. kassabon Delhaize)">
         <input type="text" class="wa-price" id="fa_price_${e.id}" placeholder="€">
         <button onclick="addFood('${e.id}')">+</button>
       </div>
