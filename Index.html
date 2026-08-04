@@ -172,6 +172,178 @@
     font-size:0.9em;
     color:var(--ink);
   }
+  .shop-list{
+    list-style:none;
+    margin:4px 0 0;
+    padding:0;
+  }
+  .shop-item{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:6px 2px;
+    font-size:0.95em;
+    cursor:pointer;
+  }
+  .shop-box{
+    width:18px;
+    height:18px;
+    min-width:18px;
+    border-radius:5px;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .shop-item.checked .shop-box{
+    background:var(--green);
+    border-color:var(--green);
+    color:#fff;
+    font-size:0.75em;
+  }
+  .shop-item.checked span.txt{
+    text-decoration:line-through;
+    color:var(--muted);
+  }
+  .status-picker{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin:2px 0 14px;
+  }
+  .status-picker button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.72em;
+    padding:6px 10px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    background:var(--paper);
+    color:var(--muted);
+  }
+  .status-picker button.active{
+    background:var(--wine);
+    border-color:var(--wine);
+    color:#f6ead9;
+  }
+  .status-badge{
+    display:inline-block;
+    font-size:0.7em;
+    padding:3px 9px;
+    border-radius:12px;
+    background:var(--wine);
+    color:#f6ead9;
+    margin-right:6px;
+  }
+
+  .tabs{
+    display:flex;
+    gap:0;
+    padding:12px 16px 0;
+  }
+  .tab-btn{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    padding:11px 8px;
+    border:1px solid var(--border);
+    background:var(--paper-dark);
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .tab-btn:first-child{ border-radius:10px 0 0 10px; border-right:none; }
+  .tab-btn:last-child{ border-radius:0 10px 10px 0; }
+  .tab-btn.active{
+    background:var(--wine);
+    color:#f6ead9;
+    border-color:var(--wine);
+    font-weight:600;
+  }
+
+  .shop-pick-list{
+    padding:14px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .shop-pick-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 6px rgba(58,46,34,0.08);
+  }
+  .shop-pick-card .sp-name{
+    font-size:1.1em;
+    color:var(--wine);
+  }
+  .shop-pick-card .sp-meta{
+    font-size:0.8em;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .shop-pick-card .sp-count{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    padding:6px 12px;
+    border-radius:14px;
+    white-space:nowrap;
+  }
+
+  .back-btn{
+    background:none;
+    border:none;
+    color:var(--wine);
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    padding:14px 16px 0;
+    cursor:pointer;
+  }
+  .shop-full-title{
+    color:var(--wine);
+    padding:6px 16px 0;
+    font-weight:400;
+    font-size:1.4em;
+  }
+  .progress-wrap{ padding:10px 16px 4px; }
+  .progress-bar-bg{
+    background:var(--paper-dark);
+    border-radius:10px;
+    height:10px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    background:var(--green);
+    height:100%;
+    width:0%;
+    transition:width 0.25s ease;
+  }
+
+  .shop-list.big{
+    padding:8px 16px 30px;
+    margin:0;
+  }
+  .shop-list.big .shop-item{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 14px;
+    margin-bottom:8px;
+    font-size:1.08em;
+  }
+  .shop-list.big .shop-box{
+    width:26px;
+    height:26px;
+    min-width:26px;
+    border-radius:7px;
+  }
+  .shop-list.big .shop-item.checked{
+    opacity:0.6;
+  }
   .card-actions{
     display:flex;
     gap:10px;
@@ -299,6 +471,17 @@
   <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
 </header>
 
+<header>
+  <h1>🍷 Dineetjes</h1>
+  <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabOverzicht" onclick="switchTab('overzicht')">📋 Overzicht</button>
+  <button class="tab-btn" id="tabBoodschappen" onclick="switchTab('boodschappen')">🛒 Boodschappen</button>
+</div>
+
+<div id="viewOverzicht">
 <div class="toolbar">
   <select id="filterType">
     <option value="alle">Alle etentjes</option>
@@ -310,6 +493,19 @@
 <div class="sync-note" id="syncNote">Lokale opslag (Firebase nog niet gekoppeld)</div>
 
 <div id="list"></div>
+</div>
+
+<div id="viewBoodschappen" style="display:none;">
+  <div id="shopPickerScreen">
+    <div class="shop-pick-list" id="shopPickList"></div>
+  </div>
+  <div id="shopFullScreen" style="display:none;">
+    <button class="back-btn" onclick="closeShopFull()">← terug</button>
+    <h2 id="shopFullTitle" class="shop-full-title"></h2>
+    <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="shopProgressBar"></div></div></div>
+    <ul class="shop-list big" id="shopFullList"></ul>
+  </div>
+</div>
 
 <button class="fab" onclick="openEditor()">+</button>
 
@@ -368,8 +564,28 @@
     </div>
 
     <div class="field">
-      <label>Evaluatie / notities achteraf</label>
-      <textarea id="f_evaluatie" placeholder="Hoe is het gevallen? Wat zou je anders doen?"></textarea>
+      <label>Manier van opdienen</label>
+      <textarea id="f_opdienstijl" placeholder="bv. Rivierkreeftencocktail in champagne coupe, mosselen individueel in klein schaaltje..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Boodschappenlijst (één item per lijn)</label>
+      <textarea id="f_boodschappen" placeholder="bv. Kalfsschenkel voor osso buco&#10;Stracciatella&#10;Verse basilicum"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — wijnen</label>
+      <textarea id="f_eval_wijnen" placeholder="Hoe vielen de wijnen? Zou je iets anders kiezen?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — eten</label>
+      <textarea id="f_eval_eten" placeholder="Hoe viel het menu? Wat werkte goed, wat niet?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — sfeer</label>
+      <textarea id="f_eval_sfeer" placeholder="Hoe was de avond/sfeer zelf?"></textarea>
     </div>
 
     <div class="field">
@@ -424,6 +640,20 @@ let entries = [];
 let editingId = null;
 let currentStars = 0;
 
+const STATUSES = [
+  {key:"idee", label:"💭 Idee"},
+  {key:"datum", label:"📅 Datum bepaald"},
+  {key:"menu", label:"🍽️ Menu"},
+  {key:"wijnen", label:"🍷 Wijnen"},
+  {key:"besteld", label:"🛒 Besteld"},
+  {key:"opdienstijl", label:"🍴 Opdienstijl"},
+  {key:"afgerond", label:"✅ Afgerond"}
+];
+function statusLabel(key){
+  const s = STATUSES.find(x=>x.key===key);
+  return s ? s.label : STATUSES[0].label;
+}
+
 function loadLocal(){
   try{
     const raw = localStorage.getItem(LOCAL_KEY);
@@ -448,6 +678,10 @@ function seedIfEmpty(){
       hoofdgerecht: "Osso buco met pasta",
       dessert: "Fijn gesneden aardbeien met vanille- en chocoladesaus",
       wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij kleine gerechtjes\nSoave Classico Monte Carbonare (Suavia) - bij osso buco",
+      opdienstijl: "Tomatentartaar met stracciatella: klein lang wit bordje\nGarnalencocktail: champagne coupe\nMosselen: uitgehaald, klein schaaltje",
+      status: "besteld",
+      boodschappen: "Burrata (2 bollen, voor dip)\nStokbrood\nPurperen tomaatjes (voldoende voor 5)\nStracciatella (2 bakjes)\nPijnboompitten\nVerse basilicum (voor basilicumolie)\nNeutrale olie (druivenpitolie) voor basilicumolie\nGrijze garnalen (5 porties)\nIJsbergsla\nMayonaise\nKetchup\nCognac\nCitroen\nVerse zalmfilet (sushi-kwaliteit)\nZure room\nRode ui\nKappertjes\nBieslook of dille\nVerse mosselen (voor 5 personen)\nBoter\nLook (knoflook)\nVerse peterselie\nScampi (10 stuks)\nGroenten (courgette, paprika, cherrytomaatjes)\nKalfsschenkel voor osso buco (5 stuks)\nUi\nWortel\nBleekselder\nTomatenblokjes of -puree\nWitte wijn (voor stoofpot)\nKalfs- of runderbouillon\nVerse pasta (tagliatelle of pappardelle)\nParmezaankaas\nCitroen (voor gremolata)\nVerse aardbeien\nVanillesaus\nChocoladesaus",
+      boodschappenChecked: {},
       evaluatie: "",
       score: 0
     },
@@ -462,6 +696,8 @@ function seedIfEmpty(){
       hoofdgerecht: "Zeeduivel met gepofte mediterrane tomaatjes en beurre blanc, linguini met Parmezaan apart",
       dessert: "Affogato - vanille-ijs, espresso tableside, amaretto + amarettikoekjes",
       wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij voorgerecht\nSaint-Véran Maison Joseph Drouhin 2023 - bij zeeduivel",
+      opdienstijl: "Rivierkreeftencocktail: kleine vintage champagne coupe\nMosselen: individueel, klein schaaltje (~12cm), 5 stuks/pers.\nLinguini: apart in individueel potje",
+      status: "besteld",
       evaluatie: "",
       score: 0
     }
@@ -504,7 +740,7 @@ function render(){
         <div class="titles">
           <div class="card-title">${escapeHtml(e.name || '(zonder naam)')}</div>
           <div class="card-meta">
-            <span class="badge">${e.type === 'lunch' ? 'Lunch' : 'Diner'}</span>${dateFmt}
+            <span class="badge">${e.type === 'lunch' ? 'Lunch' : 'Diner'}</span><span class="status-badge">${statusLabel(e.status)}</span>${dateFmt}
           </div>
         </div>
         <div style="text-align:right;">
@@ -514,6 +750,9 @@ function render(){
       </div>
       <div class="card-body">
         <div class="card-body-inner">
+          <div class="status-picker">
+            ${STATUSES.map(s => `<button class="${s.key===e.status?'active':''}" onclick="event.stopPropagation(); setEntryStatus('${e.id}', '${s.key}')">${s.label}</button>`).join('')}
+          </div>
           <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
 
           ${e.aperitief ? `<div class="section-label">Aperitief</div><div class="menu-line">${nl2br(e.aperitief)}</div>` : ''}
@@ -521,7 +760,15 @@ function render(){
           ${e.hoofdgerecht ? `<div class="section-label">Hoofdgerecht</div><div class="menu-line">${nl2br(e.hoofdgerecht)}</div>` : ''}
           ${e.dessert ? `<div class="section-label">Dessert</div><div class="menu-line">${nl2br(e.dessert)}</div>` : ''}
           ${e.wijnen ? `<div class="section-label">Wijnen</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
+          ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
+          ${itemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${itemsOf(e).length} items)</button></div>` : ''}
           ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
+          ${(e.eval_wijnen || e.eval_eten || e.eval_sfeer) ? `
+          <div class="section-label">Evaluatie</div>
+          ${e.eval_wijnen ? `<div class="eval-box"><strong>🍷 Wijnen:</strong> ${nl2br(e.eval_wijnen)}</div>` : ''}
+          ${e.eval_eten ? `<div class="eval-box" style="margin-top:6px;"><strong>🍽️ Eten:</strong> ${nl2br(e.eval_eten)}</div>` : ''}
+          ${e.eval_sfeer ? `<div class="eval-box" style="margin-top:6px;"><strong>✨ Sfeer:</strong> ${nl2br(e.eval_sfeer)}</div>` : ''}
+          ` : ''}
 
           <div class="card-actions">
             <button onclick="event.stopPropagation(); openEditor('${e.id}')">Bewerken</button>
@@ -538,6 +785,50 @@ function toggleCard(id){
   if (card) card.classList.toggle('open');
 }
 
+function renderShopList(e){
+  const items = (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!items.length) return '';
+  const checked = e.boodschappenChecked || {};
+  const rows = items.map((item, i) => {
+    const isDone = !!checked[i];
+    return `<li class="shop-item ${isDone?'checked':''}" onclick="event.stopPropagation(); toggleShopItem('${e.id}', ${i})">
+      <span class="shop-box">${isDone ? '✓' : ''}</span>
+      <span class="txt">${escapeHtml(item)}</span>
+    </li>`;
+  }).join('');
+  return `<div class="section-label">Boodschappenlijst</div><ul class="shop-list">${rows}</ul>`;
+}
+
+function toggleShopItem(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  entry.boodschappenChecked = entry.boodschappenChecked || {};
+  entry.boodschappenChecked[index] = !entry.boodschappenChecked[index];
+  persistOne(entry);
+  render();
+  // heropen de kaart na herrender
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
+function persistOne(entry){
+  if (useFirebase){
+    db.collection("dineetjes").doc(entry.id).set(entry).catch(err=>console.error(err));
+  } else {
+    saveLocal();
+  }
+}
+
+function setEntryStatus(entryId, statusKey){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  entry.status = statusKey;
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
 function escapeHtml(str){
   return (str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -546,6 +837,85 @@ function nl2br(str){
 }
 
 document.getElementById('filterType').addEventListener('change', render);
+
+/* Tabs */
+function switchTab(tab){
+  document.getElementById('tabOverzicht').classList.toggle('active', tab==='overzicht');
+  document.getElementById('tabBoodschappen').classList.toggle('active', tab==='boodschappen');
+  document.getElementById('viewOverzicht').style.display = tab==='overzicht' ? 'block' : 'none';
+  document.getElementById('viewBoodschappen').style.display = tab==='boodschappen' ? 'block' : 'none';
+  if (tab==='boodschappen'){ renderShopPicker(); }
+}
+
+function itemsOf(e){
+  return (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
+}
+
+function renderShopPicker(){
+  document.getElementById('shopFullScreen').style.display = 'none';
+  document.getElementById('shopPickerScreen').style.display = 'block';
+  const pickList = document.getElementById('shopPickList');
+  const withItems = entries.filter(e => itemsOf(e).length > 0);
+  if (!withItems.length){
+    pickList.innerHTML = '<div class="empty">Nog geen boodschappenlijstjes. Voeg items toe bij een etentje via "Bewerken".</div>';
+    return;
+  }
+  withItems.sort((a,b)=> new Date(a.date) - new Date(b.date));
+  pickList.innerHTML = withItems.map(e => {
+    const items = itemsOf(e);
+    const checked = e.boodschappenChecked || {};
+    const doneCount = items.filter((_,i)=>checked[i]).length;
+    const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long'}) : '';
+    return `<div class="shop-pick-card" onclick="openShopFull('${e.id}')">
+      <div>
+        <div class="sp-name">${escapeHtml(e.name||'(zonder naam)')}</div>
+        <div class="sp-meta">${dateFmt}</div>
+      </div>
+      <div class="sp-count">${doneCount}/${items.length}</div>
+    </div>`;
+  }).join('');
+}
+
+let activeShopEntryId = null;
+
+function openShopFull(entryId){
+  activeShopEntryId = entryId;
+  document.getElementById('shopPickerScreen').style.display = 'none';
+  document.getElementById('shopFullScreen').style.display = 'block';
+  renderShopFull();
+}
+function closeShopFull(){
+  activeShopEntryId = null;
+  renderShopPicker();
+}
+
+function renderShopFull(){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) { closeShopFull(); return; }
+  document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
+  const items = itemsOf(e);
+  const checked = e.boodschappenChecked || {};
+  const doneCount = items.filter((_,i)=>checked[i]).length;
+  const pct = items.length ? (doneCount/items.length)*100 : 0;
+  document.getElementById('shopProgressBar').style.width = pct + '%';
+
+  document.getElementById('shopFullList').innerHTML = items.map((item,i) => {
+    const isDone = !!checked[i];
+    return `<li class="shop-item ${isDone?'checked':''}" onclick="toggleShopItemFull(${i})">
+      <span class="shop-box">${isDone?'✓':''}</span>
+      <span class="txt">${escapeHtml(item)}</span>
+    </li>`;
+  }).join('');
+}
+
+function toggleShopItemFull(index){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  e.boodschappenChecked = e.boodschappenChecked || {};
+  e.boodschappenChecked[index] = !e.boodschappenChecked[index];
+  persistOne(e);
+  renderShopFull();
+}
 
 /* Editor */
 function openEditor(id){
@@ -563,7 +933,11 @@ function openEditor(id){
   document.getElementById('f_hoofdgerecht').value = e ? e.hoofdgerecht : '';
   document.getElementById('f_dessert').value = e ? e.dessert : '';
   document.getElementById('f_wijnen').value = e ? e.wijnen : '';
-  document.getElementById('f_evaluatie').value = e ? e.evaluatie : '';
+  document.getElementById('f_opdienstijl').value = e ? (e.opdienstijl||'') : '';
+  document.getElementById('f_boodschappen').value = e ? (e.boodschappen||'') : '';
+  document.getElementById('f_eval_wijnen').value = e ? (e.eval_wijnen||'') : '';
+  document.getElementById('f_eval_eten').value = e ? (e.eval_eten||'') : '';
+  document.getElementById('f_eval_sfeer').value = e ? (e.eval_sfeer||'') : '';
   currentStars = e ? (e.score||0) : 0;
   updateStarPicker();
 
@@ -600,7 +974,13 @@ function saveEntry(){
     hoofdgerecht: document.getElementById('f_hoofdgerecht').value.trim(),
     dessert: document.getElementById('f_dessert').value.trim(),
     wijnen: document.getElementById('f_wijnen').value.trim(),
-    evaluatie: document.getElementById('f_evaluatie').value.trim(),
+    opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
+    status: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).status : 'idee') || 'idee',
+    boodschappen: document.getElementById('f_boodschappen').value.trim(),
+    boodschappenChecked: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).boodschappenChecked : {}) || {},
+    eval_wijnen: document.getElementById('f_eval_wijnen').value.trim(),
+    eval_eten: document.getElementById('f_eval_eten').value.trim(),
+    eval_sfeer: document.getElementById('f_eval_sfeer').value.trim(),
     score: currentStars
   };
 
