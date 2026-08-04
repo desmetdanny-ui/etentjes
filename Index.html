@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dineetjes">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+<link rel="icon" sizes="32x32" href="icon-32.png">
+<title>Dineetjes - Danny &amp; Martine</title>
+
+<!-- Firebase (compat SDK, makkelijk in te vullen) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --paper:#f6f1e6;
+    --paper-dark:#ece3d0;
+    --ink:#3a2e22;
+    --wine:#7a2e2e;
+    --wine-dark:#5e2222;
+    --gold:#b8863f;
+    --green:#5c7a4f;
+    --muted:#8a7a63;
+    --card:#fffdf8;
+    --border:#ddd0b5;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0;
+    font-family:Georgia, "Times New Roman", serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding-bottom:90px;
+  }
+  header{
+    background:linear-gradient(180deg, var(--wine) 0%, var(--wine-dark) 100%);
+    color:#f6ead9;
+    padding:22px 18px 26px;
+    text-align:center;
+    border-bottom:4px solid var(--gold);
+  }
+  header h1{
+    margin:0;
+    font-size:1.6em;
+    letter-spacing:0.03em;
+    font-weight:400;
+  }
+  header .sub{
+    font-size:0.85em;
+    opacity:0.85;
+    margin-top:4px;
+    font-style:italic;
+  }
+
+  .toolbar{
+    display:flex;
+    gap:8px;
+    padding:14px 16px 6px;
+  }
+  .toolbar select, .toolbar input{
+    font-family:inherit;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    background:var(--card);
+    color:var(--ink);
+    font-size:0.9em;
+  }
+  .toolbar select{ flex:1; }
+
+  #list{
+    padding:10px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 2px 6px rgba(58,46,34,0.08);
+  }
+  .card-head{
+    padding:14px 16px 10px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .card-head .titles{ flex:1; }
+  .card-title{
+    font-size:1.2em;
+    color:var(--wine);
+    margin:0 0 2px;
+  }
+  .card-meta{
+    font-size:0.82em;
+    color:var(--muted);
+  }
+  .badge{
+    display:inline-block;
+    font-size:0.7em;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 9px;
+    border-radius:12px;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    margin-right:6px;
+  }
+  .stars{
+    color:var(--gold);
+    font-size:1em;
+    white-space:nowrap;
+  }
+  .chevron{
+    font-size:1.1em;
+    color:var(--muted);
+    transition:transform 0.2s ease;
+    margin-top:2px;
+  }
+  .card.open .chevron{ transform:rotate(90deg); }
+
+  .card-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height 0.25s ease;
+  }
+  .card.open .card-body{ max-height:2000px; }
+  .card-body-inner{ padding:6px 16px 16px; }
+
+  .section-label{
+    font-size:0.75em;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--gold);
+    margin:12px 0 4px;
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+  }
+  .section-label:first-child{ margin-top:4px; }
+  .menu-line{
+    font-size:0.95em;
+    line-height:1.5;
+    padding-left:2px;
+  }
+  .wine-line{
+    font-size:0.95em;
+    line-height:1.5;
+    color:var(--wine-dark);
+  }
+  .eval-box{
+    background:var(--paper-dark);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:0.92em;
+    font-style:italic;
+    color:var(--ink);
+    margin-top:4px;
+  }
+  .guests{
+    font-size:0.9em;
+    color:var(--ink);
+  }
+  .card-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+  }
+  .card-actions button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.82em;
+    border:1px solid var(--border);
+    background:var(--paper);
+    color:var(--wine-dark);
+    padding:7px 12px;
+    border-radius:8px;
+  }
+  .card-actions button.danger{
+    color:#a33;
+    border-color:#e0c0c0;
+  }
+
+  .fab{
+    position:fixed;
+    right:20px;
+    bottom:26px;
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:var(--wine);
+    color:#f6ead9;
+    font-size:1.8em;
+    border:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .sync-note{
+    text-align:center;
+    font-size:0.72em;
+    color:var(--muted);
+    padding:6px 20px 0;
+    font-family:-apple-system, sans-serif;
+  }
+
+  /* Modal / editor */
+  #overlay{
+    position:fixed; inset:0;
+    background:rgba(58,46,34,0.55);
+    display:none;
+    align-items:flex-end;
+    z-index:50;
+  }
+  #overlay.show{ display:flex; }
+  #editor{
+    background:var(--paper);
+    width:100%;
+    max-height:92vh;
+    overflow-y:auto;
+    border-radius:20px 20px 0 0;
+    padding:18px 18px 30px;
+  }
+  #editor h2{
+    color:var(--wine);
+    margin:0 0 14px;
+    font-weight:400;
+  }
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block;
+    font-size:0.78em;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--gold);
+    margin-bottom:4px;
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    font-family:Georgia, serif;
+    font-size:1em;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+
+  .star-picker{ font-size:1.6em; color:var(--border); }
+  .star-picker span{ cursor:pointer; padding:0 2px; }
+  .star-picker span.active{ color:var(--gold); }
+
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .modal-actions button{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+  }
+  #saveBtn{ background:var(--wine); color:#f6ead9; }
+  #cancelBtn{ background:var(--paper-dark); color:var(--ink); }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-style:italic;
+    padding:40px 20px;
+    font-size:0.95em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍷 Dineetjes</h1>
+  <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
+</header>
+
+<div class="toolbar">
+  <select id="filterType">
+    <option value="alle">Alle etentjes</option>
+    <option value="lunch">Enkel lunches</option>
+    <option value="diner">Enkel diners</option>
+  </select>
+</div>
+
+<div class="sync-note" id="syncNote">Lokale opslag (Firebase nog niet gekoppeld)</div>
+
+<div id="list"></div>
+
+<button class="fab" onclick="openEditor()">+</button>
+
+<!-- Editor overlay -->
+<div id="overlay">
+  <div id="editor">
+    <h2 id="editorTitle">Nieuw etentje</h2>
+
+    <div class="row2">
+      <div class="field">
+        <label>Type</label>
+        <select id="f_type">
+          <option value="lunch">Lunch</option>
+          <option value="diner">Diner</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Datum</label>
+        <input type="date" id="f_date">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Naam / gelegenheid</label>
+      <input type="text" id="f_name" placeholder="bv. Lunch met G&amp;G en zus Griet">
+    </div>
+
+    <div class="field">
+      <label>Gasten</label>
+      <input type="text" id="f_guests" placeholder="bv. Griet, Gilbert, zus van Griet">
+    </div>
+
+    <div class="field">
+      <label>Aperitief</label>
+      <textarea id="f_aperitief" placeholder="bv. Veuve Ambal Crémant Rosé, Whispering Angel"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Voorgerecht(en)</label>
+      <textarea id="f_voorgerecht" placeholder="Menugangen, één per lijn"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Hoofdgerecht</label>
+      <textarea id="f_hoofdgerecht" placeholder="bv. Osso buco met pasta"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Dessert</label>
+      <textarea id="f_dessert" placeholder="bv. Aardbeien met vanille- en chocoladesaus"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Wijnen</label>
+      <textarea id="f_wijnen" placeholder="Eén wijn per lijn, bv. Saint-Véran Joseph Drouhin 2023 - bij hoofdgerecht"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie / notities achteraf</label>
+      <textarea id="f_evaluatie" placeholder="Hoe is het gevallen? Wat zou je anders doen?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Score</label>
+      <div class="star-picker" id="starPicker">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="cancelBtn" onclick="closeEditor()">Annuleren</button>
+      <button id="saveBtn" onclick="saveEntry()">Bewaren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FIREBASE CONFIG
+   Vul hier je eigen wiezen-club config in (Firebase console >
+   Project settings > je webapp > SDK setup and configuration).
+   Zolang dit leeg/ongewijzigd blijft, werkt de app lokaal
+   (localStorage) - je verliest dus niets, sync komt er dan
+   gewoon nog niet bij.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
+  authDomain: "wiezen-club.firebaseapp.com",
+  projectId: "wiezen-club",
+  storageBucket: "wiezen-club.firebasestorage.app",
+  messagingSenderId: "184449254432",
+  appId: "1:184449254432:web:e4f4f93acae57a9a736845",
+  measurementId: "G-94G6872QG4"
+};
+
+let db = null;
+let useFirebase = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  useFirebase = true;
+} catch (e) {
+  console.warn("Firebase niet beschikbaar, gebruik lokale opslag.", e);
+}
+
+document.getElementById('syncNote').textContent = useFirebase
+  ? "☁️ Gesynchroniseerd via Firebase (wiezen-club)"
+  : "Lokale opslag (Firebase nog niet gekoppeld)";
+
+const LOCAL_KEY = "dineetjes_entries_v1";
+let entries = [];
+let editingId = null;
+let currentStars = 0;
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveLocal(){
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(entries));
+}
+
+function seedIfEmpty(){
+  if (entries.length) return;
+  entries = [
+    {
+      id: "seed-lunch-gg",
+      type: "lunch",
+      name: "Lunch met G&G en zus Griet",
+      date: "2026-08-12",
+      guests: "Griet, Gilbert, zus van Griet",
+      aperitief: "Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé (bij binnenkomst) + burrata dip\nWhispering Angel rosé (overgang naar kleine gerechtjes)",
+      voorgerecht: "1. Tomatentartaar met stracciatella, pijnboompitten, basilicumolie\n2. Garnalencocktail in champagne coupe\n3. Tartaar van zalm met zure room\n4. Mosselen in kruidenboter (uitgehaald)\n5. Scampi met groenten",
+      hoofdgerecht: "Osso buco met pasta",
+      dessert: "Fijn gesneden aardbeien met vanille- en chocoladesaus",
+      wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij kleine gerechtjes\nSoave Classico Monte Carbonare (Suavia) - bij osso buco",
+      evaluatie: "",
+      score: 0
+    },
+    {
+      id: "seed-diner-pj",
+      type: "diner",
+      name: "Diner met Patrick en Joris",
+      date: "2026-08-20",
+      guests: "Patrick, Joris",
+      aperitief: "Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé (bij binnenkomst)\nWhispering Angel rosé + stokbrood met burrata dip",
+      voorgerecht: "Rivierkreeftencocktail in champagne coupe\nMosselen met kruidenboter (individueel, 5 stuks/pers.)\nTe delen: feta salade, bruschetta",
+      hoofdgerecht: "Zeeduivel met gepofte mediterrane tomaatjes en beurre blanc, linguini met Parmezaan apart",
+      dessert: "Affogato - vanille-ijs, espresso tableside, amaretto + amarettikoekjes",
+      wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij voorgerecht\nSaint-Véran Maison Joseph Drouhin 2023 - bij zeeduivel",
+      evaluatie: "",
+      score: 0
+    }
+  ];
+  persist();
+}
+
+function persist(){
+  if (useFirebase){
+    entries.forEach(e => {
+      db.collection("dineetjes").doc(e.id).set(e).catch(err => console.error(err));
+    });
+  } else {
+    saveLocal();
+  }
+}
+
+function renderStars(score){
+  let s = "";
+  for(let i=1;i<=5;i++){ s += i<=score ? "★" : "☆"; }
+  return s;
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const filter = document.getElementById('filterType').value;
+  let shown = entries.filter(e => filter==="alle" || e.type===filter);
+  shown.sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+  if (!shown.length){
+    list.innerHTML = '<div class="empty">Nog geen etentjes hier. Tik op de + om er een toe te voegen.</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(e => {
+    const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long', year:'numeric'}) : '';
+    return `
+    <div class="card" data-id="${e.id}">
+      <div class="card-head" onclick="toggleCard('${e.id}')">
+        <div class="titles">
+          <div class="card-title">${escapeHtml(e.name || '(zonder naam)')}</div>
+          <div class="card-meta">
+            <span class="badge">${e.type === 'lunch' ? 'Lunch' : 'Diner'}</span>${dateFmt}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="stars">${renderStars(e.score||0)}</div>
+          <div class="chevron">▶</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
+
+          ${e.aperitief ? `<div class="section-label">Aperitief</div><div class="menu-line">${nl2br(e.aperitief)}</div>` : ''}
+          ${e.voorgerecht ? `<div class="section-label">Voorgerecht(en)</div><div class="menu-line">${nl2br(e.voorgerecht)}</div>` : ''}
+          ${e.hoofdgerecht ? `<div class="section-label">Hoofdgerecht</div><div class="menu-line">${nl2br(e.hoofdgerecht)}</div>` : ''}
+          ${e.dessert ? `<div class="section-label">Dessert</div><div class="menu-line">${nl2br(e.dessert)}</div>` : ''}
+          ${e.wijnen ? `<div class="section-label">Wijnen</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
+          ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
+
+          <div class="card-actions">
+            <button onclick="event.stopPropagation(); openEditor('${e.id}')">Bewerken</button>
+            <button class="danger" onclick="event.stopPropagation(); deleteEntry('${e.id}')">Verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id){
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (card) card.classList.toggle('open');
+}
+
+function escapeHtml(str){
+  return (str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function nl2br(str){
+  return escapeHtml(str).replace(/\n/g, '<br>');
+}
+
+document.getElementById('filterType').addEventListener('change', render);
+
+/* Editor */
+function openEditor(id){
+  editingId = id || null;
+  document.getElementById('editorTitle').textContent = id ? "Etentje bewerken" : "Nieuw etentje";
+
+  const e = id ? entries.find(x=>x.id===id) : null;
+
+  document.getElementById('f_type').value = e ? e.type : 'lunch';
+  document.getElementById('f_date').value = e ? e.date : '';
+  document.getElementById('f_name').value = e ? e.name : '';
+  document.getElementById('f_guests').value = e ? e.guests : '';
+  document.getElementById('f_aperitief').value = e ? e.aperitief : '';
+  document.getElementById('f_voorgerecht').value = e ? e.voorgerecht : '';
+  document.getElementById('f_hoofdgerecht').value = e ? e.hoofdgerecht : '';
+  document.getElementById('f_dessert').value = e ? e.dessert : '';
+  document.getElementById('f_wijnen').value = e ? e.wijnen : '';
+  document.getElementById('f_evaluatie').value = e ? e.evaluatie : '';
+  currentStars = e ? (e.score||0) : 0;
+  updateStarPicker();
+
+  document.getElementById('overlay').classList.add('show');
+}
+function closeEditor(){
+  document.getElementById('overlay').classList.remove('show');
+}
+
+document.getElementById('starPicker').addEventListener('click', (ev)=>{
+  if (ev.target.dataset.v){
+    currentStars = parseInt(ev.target.dataset.v);
+    updateStarPicker();
+  }
+});
+function updateStarPicker(){
+  document.querySelectorAll('#starPicker span').forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.v) <= currentStars);
+  });
+}
+
+function saveEntry(){
+  const name = document.getElementById('f_name').value.trim();
+  if (!name){ alert('Geef een naam/gelegenheid op.'); return; }
+
+  const entry = {
+    id: editingId || ('e_' + Date.now()),
+    type: document.getElementById('f_type').value,
+    date: document.getElementById('f_date').value,
+    name: name,
+    guests: document.getElementById('f_guests').value.trim(),
+    aperitief: document.getElementById('f_aperitief').value.trim(),
+    voorgerecht: document.getElementById('f_voorgerecht').value.trim(),
+    hoofdgerecht: document.getElementById('f_hoofdgerecht').value.trim(),
+    dessert: document.getElementById('f_dessert').value.trim(),
+    wijnen: document.getElementById('f_wijnen').value.trim(),
+    evaluatie: document.getElementById('f_evaluatie').value.trim(),
+    score: currentStars
+  };
+
+  if (editingId){
+    const idx = entries.findIndex(x=>x.id===editingId);
+    if (idx>-1) entries[idx] = entry;
+  } else {
+    entries.push(entry);
+  }
+
+  persist();
+  closeEditor();
+  render();
+}
+
+function deleteEntry(id){
+  if (!confirm('Dit etentje verwijderen?')) return;
+  entries = entries.filter(e=>e.id!==id);
+  if (useFirebase){
+    db.collection("dineetjes").doc(id).delete().catch(err=>console.error(err));
+  } else {
+    saveLocal();
+  }
+  render();
+}
+
+/* Init */
+function init(){
+  if (useFirebase){
+    db.collection("dineetjes").onSnapshot(snap => {
+      entries = snap.docs.map(d => d.data());
+      if (!entries.length){ seedIfEmpty(); }
+      render();
+    }, err => {
+      console.error("Firestore fout, val terug op lokaal:", err);
+      useFirebase = false;
+      document.getElementById('syncNote').textContent = "Lokale opslag (Firebase-verbinding mislukt)";
+      entries = loadLocal() || [];
+      seedIfEmpty();
+      render();
+    });
+  } else {
+    entries = loadLocal() || [];
+    seedIfEmpty();
+    render();
+  }
+}
+init();
+</script>
+
+</body>
+</html>
