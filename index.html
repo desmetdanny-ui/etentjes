@@ -931,6 +931,15 @@ function toggleCard(id){
   if (card) card.classList.toggle('open');
 }
 
+/* Herrendert de lijst maar houdt de kaart open en de scrollpositie
+   exact waar die was, zodat je niet "terugspringt" naar boven
+   telkens je iets toevoegt/aanpast binnen een open kaart. */
+function reRenderKeepOpen(entryId){
+  const scrollPos = window.scrollY;
+  reRenderKeepOpen(entryId);
+  window.scrollTo(0, scrollPos);
+}
+
 function persistOne(entry){
   if (useFirebase){
     db.collection("dineetjes").doc(entry.id).set(entry).catch(err=>console.error(err));
@@ -944,9 +953,7 @@ function setEntryStatus(entryId, statusKey){
   if (!entry) return;
   entry.status = statusKey;
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function escapeHtml(str){
@@ -1032,9 +1039,7 @@ function addWine(entryId){
   entry.wijnenLijst = entry.wijnenLijst || [];
   entry.wijnenLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs, gekocht: false, inBoodschappen: true});
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function toggleWineGekocht(entryId, index){
@@ -1042,9 +1047,7 @@ function toggleWineGekocht(entryId, index){
   if (!entry || !entry.wijnenLijst || !entry.wijnenLijst[index]) return;
   entry.wijnenLijst[index].gekocht = !entry.wijnenLijst[index].gekocht;
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function toggleWineInBoodschappen(entryId, index){
@@ -1052,9 +1055,7 @@ function toggleWineInBoodschappen(entryId, index){
   if (!entry || !entry.wijnenLijst || !entry.wijnenLijst[index]) return;
   entry.wijnenLijst[index].inBoodschappen = !entry.wijnenLijst[index].inBoodschappen;
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function deleteWine(entryId, index){
@@ -1062,9 +1063,7 @@ function deleteWine(entryId, index){
   if (!entry || !entry.wijnenLijst) return;
   entry.wijnenLijst.splice(index, 1);
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function renderFoodList(e){
@@ -1105,9 +1104,7 @@ function addFood(entryId){
   entry.voedingLijst = entry.voedingLijst || [];
   entry.voedingLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs});
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function deleteFood(entryId, index){
@@ -1115,9 +1112,7 @@ function deleteFood(entryId, index){
   if (!entry || !entry.voedingLijst) return;
   entry.voedingLijst.splice(index, 1);
   persistOne(entry);
-  render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
+  reRenderKeepOpen(entryId);
 }
 
 function renderShopPicker(){
