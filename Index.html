@@ -159,6 +159,87 @@
     line-height:1.5;
     color:var(--wine-dark);
   }
+  .wine-list{
+    margin:2px 0 0;
+  }
+  .wine-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    border-bottom:1px dotted var(--border);
+    font-size:0.95em;
+    gap:8px;
+  }
+  .wine-row:last-of-type{ border-bottom:none; }
+  .wine-row .wr-name{ flex:1; }
+  .wine-row .wr-name.wr-done{
+    text-decoration:line-through;
+    color:var(--muted);
+  }
+  .wine-row .wr-box{
+    width:18px;
+    height:18px;
+    min-width:18px;
+    border-radius:5px;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.7em;
+    color:#fff;
+  }
+  .wine-row .wr-box.checked{
+    background:var(--green);
+    border-color:var(--green);
+  }
+  .wine-row .wr-price{
+    font-family:-apple-system, sans-serif;
+    color:var(--wine-dark);
+    white-space:nowrap;
+  }
+  .wine-row .wr-del{
+    font-family:-apple-system, sans-serif;
+    font-size:0.75em;
+    color:#a33;
+    white-space:nowrap;
+  }
+  .wine-total{
+    display:flex;
+    justify-content:space-between;
+    padding-top:8px;
+    margin-top:2px;
+    font-weight:600;
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    color:var(--wine);
+  }
+  .wine-add-row{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .wine-add-row input{
+    font-family:-apple-system, sans-serif;
+    font-size:0.88em;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .wine-add-row input.wa-name{ flex:2; }
+  .wine-add-row input.wa-price{ flex:1; }
+  .wine-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 12px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
   .eval-box{
     background:var(--paper-dark);
     border-radius:10px;
@@ -599,8 +680,9 @@
     </div>
 
     <div class="field">
-      <label>Wijnen</label>
-      <textarea id="f_wijnen" placeholder="Eén wijn per lijn, bv. Saint-Véran Joseph Drouhin 2023 - bij hoofdgerecht"></textarea>
+      <label>Wijnen — context (bij welk gerecht, optioneel)</label>
+      <textarea id="f_wijnen" placeholder="bv. Saint-Véran bij het hoofdgerecht, Crémant bij aperitief..."></textarea>
+      <div style="font-size:0.78em; color:var(--muted); margin-top:2px; font-family:-apple-system,sans-serif;">Naam, prijs en aantal flessen voeg je toe in de kaart zelf, onder "Wijnen".</div>
     </div>
 
     <div class="field">
@@ -717,7 +799,13 @@ function seedIfEmpty(){
       voorgerecht: "1. Tomatentartaar met stracciatella, pijnboompitten, basilicumolie\n2. Garnalencocktail in champagne coupe\n3. Tartaar van zalm met zure room\n4. Mosselen in kruidenboter (uitgehaald)\n5. Scampi met groenten",
       hoofdgerecht: "Osso buco met pasta",
       dessert: "Fijn gesneden aardbeien met vanille- en chocoladesaus",
-      wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij kleine gerechtjes\nSoave Classico Monte Carbonare (Suavia) - bij osso buco",
+      wijnen: "",
+      wijnenLijst: [
+        {naam: "Veuve Ambal Crémant de Bourgogne Rosé (aperitief)", prijs: 0, gekocht: true},
+        {naam: "Whispering Angel rosé (bij kleine gerechtjes)", prijs: 0, gekocht: true},
+        {naam: "Soave Classico 'Monte Carbonare' Suavia (bij osso buco)", prijs: 23.00, gekocht: true}
+      ],
+      voedingLijst: [],
       opdienstijl: "Tomatentartaar met stracciatella: klein lang wit bordje\nGarnalencocktail: champagne coupe\nMosselen: uitgehaald, klein schaaltje",
       status: "besteld",
       boodschappen: "Burrata (2 bollen, voor dip)\nStokbrood\nPurperen tomaatjes (voldoende voor 5)\nStracciatella (2 bakjes)\nPijnboompitten\nVerse basilicum (voor basilicumolie)\nNeutrale olie (druivenpitolie) voor basilicumolie\nGrijze garnalen (5 porties)\nIJsbergsla\nMayonaise\nKetchup\nCognac\nCitroen\nVerse zalmfilet (sushi-kwaliteit)\nZure room\nRode ui\nKappertjes\nBieslook of dille\nVerse mosselen (voor 5 personen)\nBoter\nLook (knoflook)\nVerse peterselie\nScampi (10 stuks)\nGroenten (courgette, paprika, cherrytomaatjes)\nKalfsschenkel voor osso buco (5 stuks)\nUi\nWortel\nBleekselder\nTomatenblokjes of -puree\nWitte wijn (voor stoofpot)\nKalfs- of runderbouillon\nVerse pasta (tagliatelle of pappardelle)\nParmezaankaas\nCitroen (voor gremolata)\nVerse aardbeien\nVanillesaus\nChocoladesaus",
@@ -735,7 +823,13 @@ function seedIfEmpty(){
       voorgerecht: "Rivierkreeftencocktail in champagne coupe\nMosselen met kruidenboter (individueel, 5 stuks/pers.)\nTe delen: feta salade, bruschetta",
       hoofdgerecht: "Zeeduivel met gepofte mediterrane tomaatjes en beurre blanc, linguini met Parmezaan apart",
       dessert: "Affogato - vanille-ijs, espresso tableside, amaretto + amarettikoekjes",
-      wijnen: "Veuve Ambal Crémant Rosé - aperitief\nWhispering Angel - bij voorgerecht\nSaint-Véran Maison Joseph Drouhin 2023 - bij zeeduivel",
+      wijnen: "",
+      wijnenLijst: [
+        {naam: "Veuve Ambal Crémant de Bourgogne Rosé (aperitief)", prijs: 0, gekocht: true},
+        {naam: "Whispering Angel rosé (bij voorgerecht)", prijs: 0, gekocht: true},
+        {naam: "Saint-Véran Maison Joseph Drouhin 2023 (bij zeeduivel)", prijs: 22.95, gekocht: true}
+      ],
+      voedingLijst: [],
       opdienstijl: "Rivierkreeftencocktail: kleine vintage champagne coupe\nMosselen: individueel, klein schaaltje (~12cm), 5 stuks/pers.\nLinguini: apart in individueel potje",
       status: "besteld",
       evaluatie: "",
@@ -799,9 +893,11 @@ function render(){
           ${e.voorgerecht ? `<div class="section-label">Voorgerecht(en)</div><div class="menu-line">${nl2br(e.voorgerecht)}</div>` : ''}
           ${e.hoofdgerecht ? `<div class="section-label">Hoofdgerecht</div><div class="menu-line">${nl2br(e.hoofdgerecht)}</div>` : ''}
           ${e.dessert ? `<div class="section-label">Dessert</div><div class="menu-line">${nl2br(e.dessert)}</div>` : ''}
-          ${e.wijnen ? `<div class="section-label">Wijnen</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
+          ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
+          ${renderWineList(e)}
+          ${renderFoodList(e)}
           ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
-          ${itemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${itemsOf(e).length} items)</button></div>` : ''}
+          ${shopItemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${shopItemsOf(e).length} items)</button></div>` : ''}
           ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
           ${(e.eval_wijnen || e.eval_eten || e.eval_sfeer) ? `
           <div class="section-label">Evaluatie</div>
@@ -865,20 +961,156 @@ function itemsOf(e){
   return (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
 }
 
+/* Combineert gewone boodschappen met nog niet aangekochte wijnen,
+   zodat wijnen automatisch in de boodschappenlijst verschijnen
+   tot ze als "aangekocht" worden aangevinkt. */
+function shopItemsOf(e){
+  const food = itemsOf(e).map(item => ({label: item, kind:'food'}));
+  const wines = (e.wijnenLijst || [])
+    .map((w, idx) => ({label: '🍷 ' + w.naam, kind:'wine', wineIndex: idx}));
+  return [...food, ...wines];
+}
+function shopItemDone(e, item){
+  if (item.kind === 'wine'){
+    return !!(e.wijnenLijst && e.wijnenLijst[item.wineIndex] && e.wijnenLijst[item.wineIndex].gekocht);
+  }
+  return !!(e.boodschappenChecked && e.boodschappenChecked[item.label]);
+}
+function shopItemToggle(e, item){
+  if (item.kind === 'wine'){
+    toggleWineGekocht(e.id, item.wineIndex);
+  } else {
+    toggleShopItemFull(item.label);
+  }
+}
+
+function renderWineList(e){
+  const wines = e.wijnenLijst || [];
+  const total = wines.reduce((s,w)=> s + (Number(w.prijs)||0), 0);
+  const rows = wines.map((w,i) => `
+    <div class="wine-row">
+      <span class="wr-box ${w.gekocht?'checked':''}" onclick="event.stopPropagation(); toggleWineGekocht('${e.id}', ${i})">${w.gekocht?'✓':''}</span>
+      <span class="wr-name ${w.gekocht?'wr-done':''}">🍷 ${escapeHtml(w.naam)}</span>
+      <span class="wr-price">${w.prijs ? '€ ' + Number(w.prijs).toFixed(2).replace('.',',') : 'in huis'}</span>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteWine('${e.id}', ${i})">verwijder</span>
+    </div>`).join('');
+  const totalRow = wines.length ? `<div class="wine-total"><span>Totaal</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
+  return `
+    <div class="section-label">Wijnen</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen wijnen toegevoegd</div>'}
+      ${totalRow}
+      <div class="wine-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="wa-name" id="wa_name_${e.id}" placeholder="Naam wijn">
+        <input type="text" class="wa-price" id="wa_price_${e.id}" placeholder="€">
+        <button onclick="addWine('${e.id}')">+</button>
+      </div>
+    </div>`;
+}
+
+function addWine(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('wa_name_'+entryId);
+  const priceInp = document.getElementById('wa_price_'+entryId);
+  const naam = nameInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = priceInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  entry.wijnenLijst = entry.wijnenLijst || [];
+  entry.wijnenLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs, gekocht: false});
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
+function toggleWineGekocht(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.wijnenLijst || !entry.wijnenLijst[index]) return;
+  entry.wijnenLijst[index].gekocht = !entry.wijnenLijst[index].gekocht;
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
+function deleteWine(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.wijnenLijst) return;
+  entry.wijnenLijst.splice(index, 1);
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
+function renderFoodList(e){
+  const items = e.voedingLijst || [];
+  const total = items.reduce((s,w)=> s + (Number(w.prijs)||0), 0);
+  const rows = items.map((w,i) => `
+    <div class="wine-row">
+      <span class="wr-name">🥕 ${escapeHtml(w.naam)}</span>
+      <span class="wr-price">${w.prijs ? '€ ' + Number(w.prijs).toFixed(2).replace('.',',') : '—'}</span>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteFood('${e.id}', ${i})">verwijder</span>
+    </div>`).join('');
+  const wineTotal = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0), 0);
+  const totalRow = items.length ? `<div class="wine-total"><span>Totaal voeding</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
+  const grandTotal = (items.length || (e.wijnenLijst||[]).length) ? `<div class="wine-total" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px;"><span>Totaal etentje (eten + wijn)</span><span>€ ${(total+wineTotal).toFixed(2).replace('.',',')}</span></div>` : '';
+  return `
+    <div class="section-label">Voeding</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen voedingskosten toegevoegd</div>'}
+      ${totalRow}
+      ${grandTotal}
+      <div class="wine-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="wa-name" id="fa_name_${e.id}" placeholder="Ingrediënt / post">
+        <input type="text" class="wa-price" id="fa_price_${e.id}" placeholder="€">
+        <button onclick="addFood('${e.id}')">+</button>
+      </div>
+    </div>`;
+}
+
+function addFood(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('fa_name_'+entryId);
+  const priceInp = document.getElementById('fa_price_'+entryId);
+  const naam = nameInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = priceInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  entry.voedingLijst = entry.voedingLijst || [];
+  entry.voedingLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs});
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
+function deleteFood(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.voedingLijst) return;
+  entry.voedingLijst.splice(index, 1);
+  persistOne(entry);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
+}
+
 function renderShopPicker(){
   document.getElementById('shopFullScreen').style.display = 'none';
   document.getElementById('shopPickerScreen').style.display = 'block';
   const pickList = document.getElementById('shopPickList');
-  const withItems = entries.filter(e => itemsOf(e).length > 0);
+  const withItems = entries.filter(e => shopItemsOf(e).length > 0);
   if (!withItems.length){
     pickList.innerHTML = '<div class="empty">Nog geen boodschappenlijstjes. Voeg items toe bij een etentje via "Bewerken".</div>';
     return;
   }
   withItems.sort((a,b)=> new Date(a.date) - new Date(b.date));
   pickList.innerHTML = withItems.map(e => {
-    const items = itemsOf(e);
-    const checked = e.boodschappenChecked || {};
-    const doneCount = items.filter(item=>checked[item]).length;
+    const items = shopItemsOf(e);
+    const doneCount = items.filter(item => shopItemDone(e, item)).length;
     const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long'}) : '';
     return `<div class="shop-pick-card" onclick="openShopFull('${e.id}')">
       <div>
@@ -907,21 +1139,26 @@ function renderShopFull(){
   const e = entries.find(x=>x.id===activeShopEntryId);
   if (!e) { closeShopFull(); return; }
   document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
-  const items = itemsOf(e);
-  const checked = e.boodschappenChecked || {};
-  const doneCount = items.filter(item=>checked[item]).length;
+  const items = shopItemsOf(e);
+  const doneCount = items.filter(item => shopItemDone(e, item)).length;
   const pct = items.length ? (doneCount/items.length)*100 : 0;
   document.getElementById('shopProgressBar').style.width = pct + '%';
 
   document.getElementById('shopFullList').innerHTML = items.map((item) => {
-    const isDone = !!checked[item];
-    const safeItem = item.replace(/'/g, "\\'");
+    const isDone = shopItemDone(e, item);
+    const safeLabel = item.label.replace(/'/g, "\\'");
+    const toggleCall = item.kind === 'wine'
+      ? `toggleWineGekocht('${e.id}', ${item.wineIndex})`
+      : `toggleShopItemFull('${safeLabel}')`;
+    const delBtn = item.kind === 'food'
+      ? `<span class="shop-del" onclick="deleteShopItem('${safeLabel}')">verwijder</span>`
+      : `<span class="shop-del" style="opacity:0.4;">via wijnen</span>`;
     return `<li class="shop-item ${isDone?'checked':''}">
-      <span class="shop-left" onclick="toggleShopItemFull('${safeItem}')">
+      <span class="shop-left" onclick="${toggleCall}; renderShopFull();">
         <span class="shop-box">${isDone?'✓':''}</span>
-        <span class="txt">${escapeHtml(item)}</span>
+        <span class="txt">${escapeHtml(item.label)}</span>
       </span>
-      <span class="shop-del" onclick="deleteShopItem('${safeItem}')">verwijder</span>
+      ${delBtn}
     </li>`;
   }).join('') || '<div class="empty">Nog geen items. Voeg er hieronder een toe.</div>';
 }
@@ -1016,6 +1253,8 @@ function saveEntry(){
     hoofdgerecht: document.getElementById('f_hoofdgerecht').value.trim(),
     dessert: document.getElementById('f_dessert').value.trim(),
     wijnen: document.getElementById('f_wijnen').value.trim(),
+    wijnenLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).wijnenLijst : []) || [],
+    voedingLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).voedingLijst : []) || [],
     opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
     status: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).status : 'idee') || 'idee',
     boodschappen: document.getElementById('f_boodschappen').value.trim(),
