@@ -344,6 +344,47 @@
   .shop-list.big .shop-item.checked{
     opacity:0.6;
   }
+  .shop-list.big .shop-item{
+    justify-content:space-between;
+  }
+  .shop-list.big .shop-item .shop-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+  }
+  .shop-del{
+    font-family:-apple-system, sans-serif;
+    font-size:0.8em;
+    color:#a33;
+    padding:4px 8px;
+    flex-shrink:0;
+  }
+  .shop-add-row{
+    display:flex;
+    gap:8px;
+    padding:0 16px 30px;
+  }
+  .shop-add-row input{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:1em;
+    padding:11px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .shop-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 16px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
   .card-actions{
     display:flex;
     gap:10px;
@@ -504,6 +545,10 @@
     <h2 id="shopFullTitle" class="shop-full-title"></h2>
     <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="shopProgressBar"></div></div></div>
     <ul class="shop-list big" id="shopFullList"></ul>
+    <div class="shop-add-row">
+      <input type="text" id="newShopItem" placeholder="Nieuw item…">
+      <button onclick="addShopItem()">+ Toevoegen</button>
+    </div>
   </div>
 </div>
 
@@ -574,8 +619,18 @@
     </div>
 
     <div class="field">
-      <label>Evaluatie / notities achteraf</label>
-      <textarea id="f_evaluatie" placeholder="Hoe is het gevallen? Wat zou je anders doen?"></textarea>
+      <label>Evaluatie — wijnen</label>
+      <textarea id="f_eval_wijnen" placeholder="Hoe vielen de wijnen? Zou je iets anders kiezen?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — eten</label>
+      <textarea id="f_eval_eten" placeholder="Hoe viel het menu? Wat werkte goed, wat niet?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — sfeer</label>
+      <textarea id="f_eval_sfeer" placeholder="Hoe was de avond/sfeer zelf?"></textarea>
     </div>
 
     <div class="field">
@@ -753,6 +808,12 @@ function render(){
           ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
           ${itemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${itemsOf(e).length} items)</button></div>` : ''}
           ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
+          ${(e.eval_wijnen || e.eval_eten || e.eval_sfeer) ? `
+          <div class="section-label">Evaluatie</div>
+          ${e.eval_wijnen ? `<div class="eval-box"><strong>🍷 Wijnen:</strong> ${nl2br(e.eval_wijnen)}</div>` : ''}
+          ${e.eval_eten ? `<div class="eval-box" style="margin-top:6px;"><strong>🍽️ Eten:</strong> ${nl2br(e.eval_eten)}</div>` : ''}
+          ${e.eval_sfeer ? `<div class="eval-box" style="margin-top:6px;"><strong>✨ Sfeer:</strong> ${nl2br(e.eval_sfeer)}</div>` : ''}
+          ` : ''}
 
           <div class="card-actions">
             <button onclick="event.stopPropagation(); openEditor('${e.id}')">Bewerken</button>
@@ -767,32 +828,6 @@ function render(){
 function toggleCard(id){
   const card = document.querySelector(`.card[data-id="${id}"]`);
   if (card) card.classList.toggle('open');
-}
-
-function renderShopList(e){
-  const items = (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
-  if (!items.length) return '';
-  const checked = e.boodschappenChecked || {};
-  const rows = items.map((item, i) => {
-    const isDone = !!checked[i];
-    return `<li class="shop-item ${isDone?'checked':''}" onclick="event.stopPropagation(); toggleShopItem('${e.id}', ${i})">
-      <span class="shop-box">${isDone ? '✓' : ''}</span>
-      <span class="txt">${escapeHtml(item)}</span>
-    </li>`;
-  }).join('');
-  return `<div class="section-label">Boodschappenlijst</div><ul class="shop-list">${rows}</ul>`;
-}
-
-function toggleShopItem(entryId, index){
-  const entry = entries.find(x=>x.id===entryId);
-  if (!entry) return;
-  entry.boodschappenChecked = entry.boodschappenChecked || {};
-  entry.boodschappenChecked[index] = !entry.boodschappenChecked[index];
-  persistOne(entry);
-  render();
-  // heropen de kaart na herrender
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
 }
 
 function persistOne(entry){
@@ -848,7 +883,7 @@ function renderShopPicker(){
   pickList.innerHTML = withItems.map(e => {
     const items = itemsOf(e);
     const checked = e.boodschappenChecked || {};
-    const doneCount = items.filter((_,i)=>checked[i]).length;
+    const doneCount = items.filter(item=>checked[item]).length;
     const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long'}) : '';
     return `<div class="shop-pick-card" onclick="openShopFull('${e.id}')">
       <div>
@@ -879,24 +914,52 @@ function renderShopFull(){
   document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
   const items = itemsOf(e);
   const checked = e.boodschappenChecked || {};
-  const doneCount = items.filter((_,i)=>checked[i]).length;
+  const doneCount = items.filter(item=>checked[item]).length;
   const pct = items.length ? (doneCount/items.length)*100 : 0;
   document.getElementById('shopProgressBar').style.width = pct + '%';
 
-  document.getElementById('shopFullList').innerHTML = items.map((item,i) => {
-    const isDone = !!checked[i];
-    return `<li class="shop-item ${isDone?'checked':''}" onclick="toggleShopItemFull(${i})">
-      <span class="shop-box">${isDone?'✓':''}</span>
-      <span class="txt">${escapeHtml(item)}</span>
+  document.getElementById('shopFullList').innerHTML = items.map((item) => {
+    const isDone = !!checked[item];
+    const safeItem = item.replace(/'/g, "\\'");
+    return `<li class="shop-item ${isDone?'checked':''}">
+      <span class="shop-left" onclick="toggleShopItemFull('${safeItem}')">
+        <span class="shop-box">${isDone?'✓':''}</span>
+        <span class="txt">${escapeHtml(item)}</span>
+      </span>
+      <span class="shop-del" onclick="deleteShopItem('${safeItem}')">verwijder</span>
     </li>`;
-  }).join('');
+  }).join('') || '<div class="empty">Nog geen items. Voeg er hieronder een toe.</div>';
 }
 
-function toggleShopItemFull(index){
+function toggleShopItemFull(itemText){
   const e = entries.find(x=>x.id===activeShopEntryId);
   if (!e) return;
   e.boodschappenChecked = e.boodschappenChecked || {};
-  e.boodschappenChecked[index] = !e.boodschappenChecked[index];
+  e.boodschappenChecked[itemText] = !e.boodschappenChecked[itemText];
+  persistOne(e);
+  renderShopFull();
+}
+
+function addShopItem(){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  const inp = document.getElementById('newShopItem');
+  const val = inp.value.trim();
+  if (!val) return;
+  const items = itemsOf(e);
+  items.push(val);
+  e.boodschappen = items.join('\n');
+  inp.value = '';
+  persistOne(e);
+  renderShopFull();
+}
+
+function deleteShopItem(itemText){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  const items = itemsOf(e).filter(i => i !== itemText);
+  e.boodschappen = items.join('\n');
+  if (e.boodschappenChecked) delete e.boodschappenChecked[itemText];
   persistOne(e);
   renderShopFull();
 }
@@ -919,7 +982,9 @@ function openEditor(id){
   document.getElementById('f_wijnen').value = e ? e.wijnen : '';
   document.getElementById('f_opdienstijl').value = e ? (e.opdienstijl||'') : '';
   document.getElementById('f_boodschappen').value = e ? (e.boodschappen||'') : '';
-  document.getElementById('f_evaluatie').value = e ? e.evaluatie : '';
+  document.getElementById('f_eval_wijnen').value = e ? (e.eval_wijnen||'') : '';
+  document.getElementById('f_eval_eten').value = e ? (e.eval_eten||'') : '';
+  document.getElementById('f_eval_sfeer').value = e ? (e.eval_sfeer||'') : '';
   currentStars = e ? (e.score||0) : 0;
   updateStarPicker();
 
@@ -960,7 +1025,9 @@ function saveEntry(){
     status: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).status : 'idee') || 'idee',
     boodschappen: document.getElementById('f_boodschappen').value.trim(),
     boodschappenChecked: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).boodschappenChecked : {}) || {},
-    evaluatie: document.getElementById('f_evaluatie').value.trim(),
+    eval_wijnen: document.getElementById('f_eval_wijnen').value.trim(),
+    eval_eten: document.getElementById('f_eval_eten').value.trim(),
+    eval_sfeer: document.getElementById('f_eval_sfeer').value.trim(),
     score: currentStars
   };
 
