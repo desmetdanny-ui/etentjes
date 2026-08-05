@@ -1010,6 +1010,10 @@ let wijnenBib = [];
 let editingId = null;
 let currentStars = 0;
 let wbCurrentStars = 0;
+/* Onthoudt welke kaarten open staan, zodat ELKE herrender - ook
+   die veroorzaakt door de Firestore-sync zelf - dit automatisch
+   respecteert, in plaats van dat de kaart onverwacht dichtklapt. */
+let openCardIds = new Set();
 
 const STATUSES = [
   {key:"idee", label:"💭 Idee"},
@@ -1172,11 +1176,21 @@ function render(){
       </div>
     </div>`;
   }).join('');
+
+  // Open-status van kaarten opnieuw toepassen na elke herrender,
+  // ongeacht wat de herrender veroorzaakte (klik, Firestore-sync, ...)
+  openCardIds.forEach(id => {
+    const card = document.querySelector(`.card[data-id="${id}"]`);
+    if (card) card.classList.add('open');
+  });
 }
 
 function toggleCard(id){
   const card = document.querySelector(`.card[data-id="${id}"]`);
-  if (card) card.classList.toggle('open');
+  if (!card) return;
+  const willOpen = !card.classList.contains('open');
+  card.classList.toggle('open');
+  if (willOpen) openCardIds.add(id); else openCardIds.delete(id);
 }
 
 /* ============================================================
@@ -1268,9 +1282,8 @@ function renderBestelForm(){
    telkens je iets toevoegt/aanpast binnen een open kaart. */
 function reRenderKeepOpen(entryId){
   const scrollPos = window.scrollY;
+  openCardIds.add(entryId);
   render();
-  const card = document.querySelector(`.card[data-id="${entryId}"]`);
-  if (card) card.classList.add('open');
   window.scrollTo(0, scrollPos);
 }
 
