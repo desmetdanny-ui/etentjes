@@ -1479,14 +1479,6 @@ function deleteFood(entryId, index){
   reRenderKeepOpen(entryId);
 }
 
-function deleteFood(entryId, index){
-  const entry = entries.find(x=>x.id===entryId);
-  if (!entry || !entry.voedingLijst) return;
-  entry.voedingLijst.splice(index, 1);
-  persistOne(entry);
-  reRenderKeepOpen(entryId);
-}
-
 /* ============================================================
    GERECHTENBIBLIOTHEEK
    Sla een gerecht met zijn ingrediënten één keer op, en roep het
