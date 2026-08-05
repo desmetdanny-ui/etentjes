@@ -1666,7 +1666,7 @@ function renderWijnenBibList(){
         <div class="gerecht-body-inner">
           ${w.ervaring ? `<div class="eval-box">${nl2br(w.ervaring)}</div>` : '<div class="bestel-empty">Nog geen ervaring genoteerd</div>'}
           <div class="gerecht-actions">
-            <button onclick="event.stopPropagation(); editWijnBibErvaring('${w.id}')">Ervaring bewerken</button>
+            <button onclick="event.stopPropagation(); editWijnBibErvaring('${w.id}')">Bewerken</button>
             <button class="danger" onclick="event.stopPropagation(); deleteWijnBib('${w.id}')">Verwijderen</button>
           </div>
         </div>
@@ -1702,6 +1702,10 @@ function saveWijnBib(){
 function editWijnBibErvaring(id){
   const w = wijnenBib.find(x=>x.id===id);
   if (!w) return;
+  const prijsVal = prompt("Prijs per fles (€, leeg = 'in huis'):", w.prijs || '');
+  if (prijsVal === null) return;
+  const prijsParsed = parseFloat(prijsVal.trim().replace(',', '.'));
+  w.prijs = (prijsVal.trim() && !isNaN(prijsParsed)) ? prijsParsed : 0;
   const val = prompt("Ervaring / tasting notes:", w.ervaring || '');
   if (val === null) return;
   w.ervaring = val.trim();
