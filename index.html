@@ -1268,7 +1268,9 @@ function renderBestelForm(){
    telkens je iets toevoegt/aanpast binnen een open kaart. */
 function reRenderKeepOpen(entryId){
   const scrollPos = window.scrollY;
-  reRenderKeepOpen(entryId);
+  render();
+  const card = document.querySelector(`.card[data-id="${entryId}"]`);
+  if (card) card.classList.add('open');
   window.scrollTo(0, scrollPos);
 }
 
