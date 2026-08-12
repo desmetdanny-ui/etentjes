@@ -130,6 +130,56 @@
     white-space:nowrap;
     margin-top:3px;
   }
+  .bijlage-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 0;
+    border-bottom:1px dotted var(--border);
+    font-size:0.95em;
+  }
+  .bijlage-row:last-of-type{ border-bottom:none; }
+  .bijlage-row a{
+    flex:1;
+    color:var(--wine-dark);
+    text-decoration:none;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .bijlage-row a:before{ content:"📎 "; }
+  .bijlage-add-row{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .bijlage-add-row input{
+    font-family:-apple-system, sans-serif;
+    font-size:0.88em;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .bijlage-add-row input.ba-name{ flex:1; }
+  .bijlage-add-row input.ba-url{ flex:2; }
+  .bijlage-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 12px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .bijlage-hint{
+    font-size:0.78em;
+    color:var(--muted);
+    margin-top:4px;
+    font-family:-apple-system, sans-serif;
+  }
   .chevron{
     font-size:1.1em;
     color:var(--muted);
@@ -1177,6 +1227,7 @@ function render(){
           ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
           ${renderWineList(e)}
           ${renderFoodList(e)}
+          ${renderBijlagenList(e)}
           ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
           ${shopItemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${shopItemsOf(e).length} items)</button></div>` : ''}
           ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
@@ -1508,6 +1559,54 @@ function deleteFood(entryId, index){
   const entry = entries.find(x=>x.id===entryId);
   if (!entry || !entry.voedingLijst) return;
   entry.voedingLijst.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+/* ============================================================
+   BIJLAGEN (bonnetjes / foto's)
+   Geen eigen bestandsopslag - dat vraagt om Firebase Storage op
+   het betaalplan. In plaats daarvan bewaren we gewoon een linkje
+   (bv. naar een gedeelde foto op Google Drive) per etentje.
+   ============================================================ */
+function renderBijlagenList(e){
+  const bijlagen = e.bijlagen || [];
+  const rows = bijlagen.map((b,i) => `
+    <div class="bijlage-row">
+      <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener">${escapeHtml(b.naam || b.url)}</a>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteBijlage('${e.id}', ${i})">verwijder</span>
+    </div>`).join('');
+  return `
+    <div class="section-label">Bonnetjes / bijlagen</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen bonnetjes of foto\'s gekoppeld</div>'}
+      <div class="bijlage-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="ba-name" id="ba_name_${e.id}" placeholder="Naam (bv. bon Delhaize)">
+        <input type="text" class="ba-url" id="ba_url_${e.id}" placeholder="Link (Google Drive, foto...)">
+        <button onclick="addBijlage('${e.id}')">+</button>
+      </div>
+      <div class="bijlage-hint">Maak een foto, zet die op Google Drive, deel de link ("Iedereen met de link"), en plak die hier.</div>
+    </div>`;
+}
+
+function addBijlage(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('ba_name_'+entryId);
+  const urlInp = document.getElementById('ba_url_'+entryId);
+  const naam = nameInp.value.trim();
+  const url = urlInp.value.trim();
+  if (!url) return;
+  entry.bijlagen = entry.bijlagen || [];
+  entry.bijlagen.push({naam, url});
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function deleteBijlage(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.bijlagen) return;
+  entry.bijlagen.splice(index, 1);
   persistOne(entry);
   reRenderKeepOpen(entryId);
 }
@@ -1946,6 +2045,7 @@ function saveEntry(){
     wijnen: document.getElementById('f_wijnen').value.trim(),
     wijnenLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).wijnenLijst : []) || [],
     voedingLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).voedingLijst : []) || [],
+    bijlagen: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).bijlagen : []) || [],
     opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
     status: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).status : 'idee') || 'idee',
     boodschappen: document.getElementById('f_boodschappen').value.trim(),
