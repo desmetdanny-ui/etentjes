@@ -123,6 +123,13 @@
     font-size:1em;
     white-space:nowrap;
   }
+  .card-cost{
+    font-family:-apple-system, sans-serif;
+    font-size:0.78em;
+    color:var(--wine-dark);
+    white-space:nowrap;
+    margin-top:3px;
+  }
   .chevron{
     font-size:1.1em;
     color:var(--muted);
@@ -1108,6 +1115,17 @@ function renderStars(score){
   return s;
 }
 
+/* Totale kosten (wijn + voeding) van één etentje, gebruikt zowel
+   in het overzicht (kaart-kop) als in het bestelformulier. */
+function totalKosten(e){
+  const wijn = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const voeding = (e.voedingLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  return wijn + voeding;
+}
+function formatEuro(n){
+  return "€ " + n.toFixed(2).replace('.', ',');
+}
+
 function render(){
   const list = document.getElementById('list');
   const filter = document.getElementById('filterType').value;
@@ -1121,6 +1139,7 @@ function render(){
 
   list.innerHTML = shown.map(e => {
     const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long', year:'numeric'}) : '';
+    const kosten = totalKosten(e);
     return `
     <div class="card" data-id="${e.id}">
       <div class="card-head" onclick="toggleCard('${e.id}')">
@@ -1132,6 +1151,7 @@ function render(){
         </div>
         <div style="text-align:right;">
           <div class="stars">${renderStars(e.score||0)}</div>
+          ${kosten > 0 ? `<div class="card-cost">${formatEuro(kosten)}</div>` : ''}
           <div class="chevron">▶</div>
         </div>
       </div>
