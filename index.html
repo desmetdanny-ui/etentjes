@@ -1098,6 +1098,13 @@ function compressImage(file, maxDim, quality){
 
 async function uploadBijlageFoto(file, pad){
   if (!storage) throw new Error('Storage niet beschikbaar');
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (isPdf){
+    const bestandsnaam = pad + '_' + Date.now() + '.pdf';
+    const ref = storage.ref().child('bonnetjes/' + bestandsnaam);
+    await ref.put(file, {contentType:'application/pdf'});
+    return await ref.getDownloadURL();
+  }
   let blob = await compressImage(file, 1600, 0.72);
   // Als het nog steeds te groot is, nog wat harder comprimeren
   if (blob.size > 900000){
@@ -1637,7 +1644,7 @@ function renderBijlagenList(e){
       ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen bonnetjes of foto\'s gekoppeld</div>'}
       <div class="bijlage-add-row" onclick="event.stopPropagation();">
         <input type="text" class="ba-name" id="ba_name_${e.id}" placeholder="Naam (bv. bon Delhaize)">
-        <label class="bijlage-filebtn">📷 Kies bestand<input type="file" accept="image/*" id="ba_file_${e.id}" style="display:none;" onchange="handleBijlageFile('${e.id}')"></label>
+        <label class="bijlage-filebtn">📷 Kies bestand<input type="file" accept="image/*,application/pdf" id="ba_file_${e.id}" style="display:none;" onchange="handleBijlageFile('${e.id}')"></label>
       </div>
       <div class="bijlage-add-row" onclick="event.stopPropagation();">
         <input type="text" class="ba-url" id="ba_url_${e.id}" placeholder="Of plak een link (Google Drive...)">
