@@ -16,6 +16,7 @@
 <!-- Firebase (compat SDK, makkelijk in te vullen) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
   :root{
@@ -179,6 +180,19 @@
     color:var(--muted);
     margin-top:4px;
     font-family:-apple-system, sans-serif;
+  }
+  .bijlage-filebtn{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    cursor:pointer;
   }
   .chevron{
     font-size:1.1em;
@@ -1045,13 +1059,54 @@ const firebaseConfig = {
 };
 
 let db = null;
+let storage = null;
 let useFirebase = false;
 try {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
+  storage = firebase.storage();
   useFirebase = true;
 } catch (e) {
   console.warn("Firebase niet beschikbaar, gebruik lokale opslag.", e);
+}
+
+/* ============================================================
+   FOTO UPLOAD (bonnetjes / bevestigingen)
+   Comprimeert een foto in de browser (max 1600px, JPEG ~0.7)
+   en zet die rechtstreeks in Firebase Storage. Geen aparte
+   linkjes meer nodig - gewoon "Kies bestand" tikken.
+   ============================================================ */
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadBijlageFoto(file, pad){
+  if (!storage) throw new Error('Storage niet beschikbaar');
+  let blob = await compressImage(file, 1600, 0.72);
+  // Als het nog steeds te groot is, nog wat harder comprimeren
+  if (blob.size > 900000){
+    blob = await compressImage(file, 1200, 0.55);
+  }
+  const bestandsnaam = pad + '_' + Date.now() + '.jpg';
+  const ref = storage.ref().child('bonnetjes/' + bestandsnaam);
+  await ref.put(blob);
+  return await ref.getDownloadURL();
 }
 
 document.getElementById('syncNote').textContent = useFirebase
@@ -1565,9 +1620,9 @@ function deleteFood(entryId, index){
 
 /* ============================================================
    BIJLAGEN (bonnetjes / foto's)
-   Geen eigen bestandsopslag - dat vraagt om Firebase Storage op
-   het betaalplan. In plaats daarvan bewaren we gewoon een linkje
-   (bv. naar een gedeelde foto op Google Drive) per etentje.
+   Twee manieren om een bijlage te koppelen: rechtstreeks een
+   foto kiezen (wordt gecomprimeerd en naar Firebase Storage
+   geüpload), of desgewenst nog altijd een link plakken.
    ============================================================ */
 function renderBijlagenList(e){
   const bijlagen = e.bijlagen || [];
@@ -1582,11 +1637,38 @@ function renderBijlagenList(e){
       ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen bonnetjes of foto\'s gekoppeld</div>'}
       <div class="bijlage-add-row" onclick="event.stopPropagation();">
         <input type="text" class="ba-name" id="ba_name_${e.id}" placeholder="Naam (bv. bon Delhaize)">
-        <input type="text" class="ba-url" id="ba_url_${e.id}" placeholder="Link (Google Drive, foto...)">
+        <label class="bijlage-filebtn">📷 Kies bestand<input type="file" accept="image/*" id="ba_file_${e.id}" style="display:none;" onchange="handleBijlageFile('${e.id}')"></label>
+      </div>
+      <div class="bijlage-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="ba-url" id="ba_url_${e.id}" placeholder="Of plak een link (Google Drive...)">
         <button onclick="addBijlage('${e.id}')">+</button>
       </div>
-      <div class="bijlage-hint">Maak een foto, zet die op Google Drive, deel de link ("Iedereen met de link"), en plak die hier.</div>
+      <div class="bijlage-hint" id="ba_status_${e.id}">Kies een foto (wordt automatisch gecomprimeerd), of plak zelf een link.</div>
     </div>`;
+}
+
+async function handleBijlageFile(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const fileInp = document.getElementById('ba_file_'+entryId);
+  const nameInp = document.getElementById('ba_name_'+entryId);
+  const statusEl = document.getElementById('ba_status_'+entryId);
+  const file = fileInp.files && fileInp.files[0];
+  if (!file) return;
+  const naam = nameInp.value.trim() || file.name;
+  if (statusEl) statusEl.textContent = '⏳ Bezig met uploaden...';
+  try{
+    const url = await uploadBijlageFoto(file, 'dineetjes_'+entryId);
+    entry.bijlagen = entry.bijlagen || [];
+    entry.bijlagen.push({naam, url});
+    persistOne(entry);
+    nameInp.value = '';
+    fileInp.value = '';
+    reRenderKeepOpen(entryId);
+  }catch(err){
+    console.error(err);
+    if (statusEl) statusEl.textContent = '⚠️ Uploaden mislukt, probeer opnieuw.';
+  }
 }
 
 function addBijlage(entryId){
