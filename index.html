@@ -1500,6 +1500,10 @@ function renderCourseSection(e, def){
   const rows = items.map((txt,i) => `
     <div class="wine-row">
       <span class="wr-name">${escapeHtml(txt)}</span>
+      <select onclick="event.stopPropagation();" onchange="event.stopPropagation(); moveCourseItem('${e.id}', '${def.key}', ${i}, this.value); this.value='';" style="font-family:-apple-system,sans-serif; font-size:0.75em; padding:4px 6px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--ink);">
+        <option value="">verplaats…</option>
+        ${COURSE_DEFS.filter(d=>d.key!==def.key).map(d=>`<option value="${d.key}">${d.label}</option>`).join('')}
+      </select>
       <span class="wr-del" onclick="event.stopPropagation(); deleteCourseItem('${e.id}', '${def.key}', ${i})">verwijder</span>
     </div>`).join('');
   return `
@@ -1513,6 +1517,22 @@ function renderCourseSection(e, def){
         ${renderCoursePickerOptions(e.id, def.key)}
       </div>
     </div>`;
+}
+
+function moveCourseItem(entryId, fromKey, index, toKey){
+  if (!toKey) return;
+  const entry = entries.find(x=>x.id===entryId);
+  const fromDef = COURSE_DEFS.find(d=>d.key===fromKey);
+  const toDef = COURSE_DEFS.find(d=>d.key===toKey);
+  if (!entry || !fromDef || !toDef) return;
+  const fromItems = getCourseItems(entry, fromDef);
+  const txt = fromItems[index];
+  if (txt === undefined) return;
+  fromItems.splice(index, 1);
+  const toItems = getCourseItems(entry, toDef);
+  toItems.push(txt);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
 }
 
 function toggleCoursePicker(entryId, key){
@@ -1829,6 +1849,12 @@ function renderGerechtenList(){
       <div class="gerecht-body">
         <div class="gerecht-body-inner">
           ${(g.ingredienten||[]).map(i => `<div class="gerecht-ing">• ${escapeHtml(i)}</div>`).join('') || '<div class="bestel-empty">Geen ingrediënten genoteerd</div>'}
+          <div style="font-family:-apple-system,sans-serif; font-size:0.85em; margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <label style="color:var(--muted);">Categorie:</label>
+            <select onclick="event.stopPropagation();" onchange="event.stopPropagation(); moveGerechtCategorie('${g.id}', this.value)" style="font-family:-apple-system,sans-serif; font-size:0.85em; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--ink);">
+              ${Object.keys(GERECHT_CATLABEL).map(k => `<option value="${k}" ${k===g.categorie?'selected':''}>${GERECHT_CATLABEL[k]}</option>`).join('')}
+            </select>
+          </div>
           <div class="gerecht-actions">
             <button class="danger" onclick="event.stopPropagation(); deleteGerecht('${g.id}')">Verwijderen</button>
           </div>
@@ -1840,6 +1866,14 @@ function renderGerechtenList(){
 function toggleGerechtCard(id){
   const card = document.querySelector(`.gerecht-card[data-gid="${id}"]`);
   if (card) card.classList.toggle('open');
+}
+
+function moveGerechtCategorie(id, newCat){
+  const g = gerechten.find(x=>x.id===id);
+  if (!g || g.categorie === newCat) return;
+  g.categorie = newCat;
+  persistGerecht(g);
+  renderGerechtenList();
 }
 
 function saveGerecht(){
