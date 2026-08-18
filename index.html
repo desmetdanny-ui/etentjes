@@ -977,13 +977,13 @@
     </div>
 
     <div class="field" style="font-size:0.85em; color:var(--muted); font-family:-apple-system,sans-serif; background:var(--paper-dark); border-radius:8px; padding:10px 12px;">
-      Aperitief, sharing, amuses, voorgerecht, hoofdgerecht en dessert beheer je per item rechtstreeks in de kaart zelf: open het etentje na het bewaren, en voeg per sectie items toe of verwijder ze één voor één.
+      Aperitief, sharing, amuses, voorgerecht, hoofdgerecht en dessert beheer je per item rechtstreeks in de kaart zelf: open het etentje na het bewaren, en kies er per sectie een gerecht uit je bibliotheek — of maak meteen een nieuw gerecht mét ingrediënten aan. Zo blijft je boodschappenlijst altijd kloppen.
     </div>
 
     <div class="field">
       <label>Wijnen — context (bij welk gerecht, optioneel)</label>
       <textarea id="f_wijnen" placeholder="bv. Saint-Véran bij het hoofdgerecht, Crémant bij aperitief..."></textarea>
-      <div style="font-size:0.78em; color:var(--muted); margin-top:2px; font-family:-apple-system,sans-serif;">Naam, prijs en aantal flessen voeg je toe in de kaart zelf, onder "Wijnen".</div>
+      <div style="font-size:0.78em; color:var(--muted); margin-top:2px; font-family:-apple-system,sans-serif;">Wijnen zelf kies je (of maak je aan) in de kaart, onder "Wijnen" — uit je wijnkelder-bibliotheek.</div>
     </div>
 
     <div class="field">
@@ -1288,13 +1288,6 @@ function render(){
           </div>
           <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
 
-          <div class="card-actions">
-            <button onclick="event.stopPropagation(); toggleGerechtPicker('${e.id}')">📖 Gerecht uit bibliotheek toevoegen</button>
-          </div>
-          <div class="gerecht-picker" id="gpicker_${e.id}">
-            ${renderGerechtPickerOptions(e.id)}
-          </div>
-
           ${COURSE_DEFS.map(def => renderCourseSection(e, def)).join('')}
 
           ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
@@ -1513,25 +1506,49 @@ function renderCourseSection(e, def){
     <div class="section-label">${def.label}</div>
     <div class="wine-list">
       ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog niets toegevoegd</div>'}
-      <div class="wine-add-row" onclick="event.stopPropagation();">
-        <input type="text" class="wa-name" id="ca_${def.key}_${e.id}" placeholder="Item toevoegen…" style="flex:1;">
-        <button onclick="addCourseItem('${e.id}', '${def.key}')">+</button>
+      <div class="card-actions" style="margin-top:8px;">
+        <button onclick="event.stopPropagation(); toggleCoursePicker('${e.id}', '${def.key}')">📖 Gerecht kiezen of toevoegen</button>
+      </div>
+      <div class="gerecht-picker" id="cpicker_${def.key}_${e.id}">
+        ${renderCoursePickerOptions(e.id, def.key)}
       </div>
     </div>`;
 }
 
-function addCourseItem(entryId, key){
-  const entry = entries.find(x=>x.id===entryId);
-  const def = COURSE_DEFS.find(d=>d.key===key);
-  if (!entry || !def) return;
-  const inp = document.getElementById('ca_'+key+'_'+entryId);
-  const val = inp.value.trim();
-  if (!val) return;
-  const items = getCourseItems(entry, def);
-  items.push(val);
-  inp.value = '';
-  persistOne(entry);
-  reRenderKeepOpen(entryId);
+function toggleCoursePicker(entryId, key){
+  const el = document.getElementById('cpicker_'+key+'_'+entryId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderCoursePickerOptions(entryId, key){
+  const matches = gerechten.filter(g => g.categorie === key).sort((a,b)=> a.naam.localeCompare(b.naam));
+  const existingBtns = matches.length
+    ? matches.map(g => `<button onclick="event.stopPropagation(); applyGerechtToEntry('${entryId}', '${g.id}')">${escapeHtml(g.naam)}</button>`).join('')
+    : `<div class="bestel-empty" style="padding:4px 2px;">Nog geen gerechten in deze categorie</div>`;
+  return `
+    ${existingBtns}
+    <div style="margin-top:8px; padding-top:8px; border-top:1px dotted var(--border);">
+      <div style="font-size:0.78em; color:var(--muted); font-family:-apple-system,sans-serif; margin-bottom:6px;">Nieuw gerecht in deze categorie — ingrediënten zijn verplicht:</div>
+      <input type="text" class="wa-name" id="cg_naam_${key}_${entryId}" placeholder="Naam gerecht" style="width:100%; margin-bottom:6px;">
+      <textarea id="cg_ing_${key}_${entryId}" placeholder="Ingrediënten, één per lijn" style="width:100%; min-height:60px; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink); margin-bottom:6px;"></textarea>
+      <button onclick="event.stopPropagation(); saveAndApplyGerecht('${entryId}', '${key}')" style="width:100%; font-family:-apple-system,sans-serif; font-size:0.85em; background:var(--wine); color:#f6ead9; border:none; padding:9px; border-radius:8px;">+ Bewaren in bibliotheek &amp; toevoegen</button>
+    </div>`;
+}
+
+function saveAndApplyGerecht(entryId, key){
+  const naamInp = document.getElementById('cg_naam_'+key+'_'+entryId);
+  const ingInp = document.getElementById('cg_ing_'+key+'_'+entryId);
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const ingredienten = ingInp.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ingredienten.length){
+    alert('Voeg minstens één ingrediënt toe — anders klopt je boodschappenlijst straks niet.');
+    return;
+  }
+  const g = {id: 'g_' + Date.now(), naam, categorie: key, ingredienten};
+  gerechten.push(g);
+  persistGerecht(g);
+  applyGerechtToEntry(entryId, g.id);
 }
 
 function deleteCourseItem(entryId, key, index){
@@ -1569,16 +1586,10 @@ function renderWineList(e){
       ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen wijnen toegevoegd</div>'}
       ${totalRow}
       <div class="card-actions" style="margin-top:8px;">
-        <button onclick="event.stopPropagation(); toggleWijnBibPicker('${e.id}')">🍷 Uit wijnkelder kiezen</button>
+        <button onclick="event.stopPropagation(); toggleWijnBibPicker('${e.id}')">🍷 Wijn kiezen of toevoegen</button>
       </div>
       <div class="gerecht-picker" id="wbpicker_${e.id}">
         ${renderWijnBibPickerOptions(e.id)}
-      </div>
-      <div class="wine-add-row" onclick="event.stopPropagation();">
-        <input type="text" class="wa-name" id="wa_name_${e.id}" placeholder="Naam wijn">
-        <input type="number" min="1" class="wa-qty" id="wa_qty_${e.id}" placeholder="Aantal" value="1">
-        <input type="text" class="wa-price" id="wa_price_${e.id}" placeholder="€ per fles">
-        <button onclick="addWine('${e.id}')">+</button>
       </div>
     </div>`;
 }
@@ -1837,6 +1848,10 @@ function saveGerecht(){
   if (!naam) return;
   const categorie = document.getElementById('g_categorie').value;
   const ingredienten = document.getElementById('g_ingredienten').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ingredienten.length){
+    alert('Voeg minstens één ingrediënt toe — anders klopt je boodschappenlijst straks niet.');
+    return;
+  }
   const g = {id: 'g_' + Date.now(), naam, categorie, ingredienten};
   gerechten.push(g);
   persistGerecht(g);
@@ -2011,9 +2026,36 @@ function toggleWijnBibPicker(entryId){
 }
 
 function renderWijnBibPickerOptions(entryId){
-  if (!wijnenBib.length) return '<div class="bestel-empty" style="padding:4px 2px;">Nog geen wijnen in je wijnkelder</div>';
   const sorted = [...wijnenBib].sort((a,b)=> a.naam.localeCompare(b.naam));
-  return sorted.map(w => `<button onclick="event.stopPropagation(); applyWijnBibToEntry('${entryId}', '${w.id}')">🍷 ${escapeHtml(w.naam)}${w.prijs?' — € '+Number(w.prijs).toFixed(2).replace('.',','):''}</button>`).join('');
+  const existingBtns = sorted.length
+    ? sorted.map(w => `<button onclick="event.stopPropagation(); applyWijnBibToEntry('${entryId}', '${w.id}')">🍷 ${escapeHtml(w.naam)}${w.prijs?' — € '+Number(w.prijs).toFixed(2).replace('.',','):''}</button>`).join('')
+    : `<div class="bestel-empty" style="padding:4px 2px;">Nog geen wijnen in je wijnkelder</div>`;
+  return `
+    ${existingBtns}
+    <div style="margin-top:8px; padding-top:8px; border-top:1px dotted var(--border);">
+      <div style="font-size:0.78em; color:var(--muted); font-family:-apple-system,sans-serif; margin-bottom:6px;">Nieuwe wijn in de wijnkelder:</div>
+      <input type="text" class="wa-name" id="wbn_naam_${entryId}" placeholder="Naam wijn" style="width:100%; margin-bottom:6px;">
+      <div class="row2" style="margin-bottom:6px;">
+        <input type="text" id="wbn_prijs_${entryId}" placeholder="€ per fles (optioneel)" style="flex:1; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink);">
+        <input type="text" id="wbn_regio_${entryId}" placeholder="Druif/regio (optioneel)" style="flex:1; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink);">
+      </div>
+      <button onclick="event.stopPropagation(); saveAndApplyWijnBib('${entryId}')" style="width:100%; font-family:-apple-system,sans-serif; font-size:0.85em; background:var(--wine); color:#f6ead9; border:none; padding:9px; border-radius:8px;">+ Bewaren in wijnkelder &amp; toevoegen</button>
+    </div>`;
+}
+
+function saveAndApplyWijnBib(entryId){
+  const naamInp = document.getElementById('wbn_naam_'+entryId);
+  const prijsInp = document.getElementById('wbn_prijs_'+entryId);
+  const regioInp = document.getElementById('wbn_regio_'+entryId);
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = prijsInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  const regio = regioInp.value.trim();
+  const w = {id:'wb_'+Date.now(), naam, prijs: isNaN(prijs)?0:prijs, regio, ervaring:'', score:0};
+  wijnenBib.push(w);
+  persistWijnBib(w);
+  applyWijnBibToEntry(entryId, w.id);
 }
 
 function applyWijnBibToEntry(entryId, wbId){
