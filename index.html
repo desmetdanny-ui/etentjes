@@ -898,6 +898,8 @@
       <label>Categorie</label>
       <select id="g_categorie">
         <option value="aperitief">Aperitief</option>
+        <option value="sharing">Sharing bij aperitief</option>
+        <option value="amuses">Amuses</option>
         <option value="voorgerecht" selected>Voorgerecht</option>
         <option value="hoofdgerecht">Hoofdgerecht</option>
         <option value="dessert">Dessert</option>
@@ -974,24 +976,8 @@
       <input type="text" id="f_guests" placeholder="bv. Griet, Gilbert, zus van Griet">
     </div>
 
-    <div class="field">
-      <label>Aperitief</label>
-      <textarea id="f_aperitief" placeholder="bv. Veuve Ambal Crémant Rosé, Whispering Angel"></textarea>
-    </div>
-
-    <div class="field">
-      <label>Voorgerecht(en)</label>
-      <textarea id="f_voorgerecht" placeholder="Menugangen, één per lijn"></textarea>
-    </div>
-
-    <div class="field">
-      <label>Hoofdgerecht</label>
-      <textarea id="f_hoofdgerecht" placeholder="bv. Osso buco met pasta"></textarea>
-    </div>
-
-    <div class="field">
-      <label>Dessert</label>
-      <textarea id="f_dessert" placeholder="bv. Aardbeien met vanille- en chocoladesaus"></textarea>
+    <div class="field" style="font-size:0.85em; color:var(--muted); font-family:-apple-system,sans-serif; background:var(--paper-dark); border-radius:8px; padding:10px 12px;">
+      Aperitief, sharing, amuses, voorgerecht, hoofdgerecht en dessert beheer je per item rechtstreeks in de kaart zelf: open het etentje na het bewaren, en voeg per sectie items toe of verwijder ze één voor één.
     </div>
 
     <div class="field">
@@ -1134,6 +1120,34 @@ let wbCurrentStars = 0;
    respecteert, in plaats van dat de kaart onverwacht dichtklapt. */
 let openCardIds = new Set();
 
+/* ============================================================
+   MENUGANGEN
+   Elke gang (aperitief, sharing, amuses, voor-, hoofdgerecht,
+   dessert) wordt bewaard als een lijst van losse items, zodat je
+   per item kan toevoegen of verwijderen - net als bij wijnen en
+   voeding. Oude etentjes met platte tekst (vóór deze update)
+   worden bij het openen automatisch omgezet naar zo'n lijst.
+   ============================================================ */
+const COURSE_DEFS = [
+  {key:"aperitief", label:"Aperitief", field:"aperitiefItems", legacy:"aperitief"},
+  {key:"sharing", label:"Sharing bij aperitief", field:"sharingItems", legacy:null},
+  {key:"amuses", label:"Amuses", field:"amusesItems", legacy:null},
+  {key:"voorgerecht", label:"Voorgerecht(en)", field:"voorgerechtItems", legacy:"voorgerecht"},
+  {key:"hoofdgerecht", label:"Hoofdgerecht", field:"hoofdgerechtItems", legacy:"hoofdgerecht"},
+  {key:"dessert", label:"Dessert", field:"dessertItems", legacy:"dessert"}
+];
+
+function getCourseItems(e, def){
+  if (!Array.isArray(e[def.field])){
+    if (def.legacy && typeof e[def.legacy] === 'string' && e[def.legacy].trim()){
+      e[def.field] = e[def.legacy].split('\n').map(s=>s.trim()).filter(Boolean);
+    } else {
+      e[def.field] = [];
+    }
+  }
+  return e[def.field];
+}
+
 const STATUSES = [
   {key:"idee", label:"💭 Idee"},
   {key:"datum", label:"📅 Datum bepaald"},
@@ -1274,17 +1288,14 @@ function render(){
           </div>
           <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
 
-          ${e.aperitief ? `<div class="section-label">Aperitief</div><div class="menu-line">${nl2br(e.aperitief)}</div>` : ''}
-          ${e.voorgerecht ? `<div class="section-label">Voorgerecht(en)</div><div class="menu-line">${nl2br(e.voorgerecht)}</div>` : ''}
-          ${e.hoofdgerecht ? `<div class="section-label">Hoofdgerecht</div><div class="menu-line">${nl2br(e.hoofdgerecht)}</div>` : ''}
-          ${e.dessert ? `<div class="section-label">Dessert</div><div class="menu-line">${nl2br(e.dessert)}</div>` : ''}
-
           <div class="card-actions">
             <button onclick="event.stopPropagation(); toggleGerechtPicker('${e.id}')">📖 Gerecht uit bibliotheek toevoegen</button>
           </div>
           <div class="gerecht-picker" id="gpicker_${e.id}">
             ${renderGerechtPickerOptions(e.id)}
           </div>
+
+          ${COURSE_DEFS.map(def => renderCourseSection(e, def)).join('')}
 
           ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
           ${renderWineList(e)}
@@ -1486,6 +1497,51 @@ function shopItemToggle(e, item){
   } else {
     toggleShopItemFull(item.label);
   }
+}
+
+/* ============================================================
+   MENUGANGEN — weergave en beheer per item
+   ============================================================ */
+function renderCourseSection(e, def){
+  const items = getCourseItems(e, def);
+  const rows = items.map((txt,i) => `
+    <div class="wine-row">
+      <span class="wr-name">${escapeHtml(txt)}</span>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteCourseItem('${e.id}', '${def.key}', ${i})">verwijder</span>
+    </div>`).join('');
+  return `
+    <div class="section-label">${def.label}</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog niets toegevoegd</div>'}
+      <div class="wine-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="wa-name" id="ca_${def.key}_${e.id}" placeholder="Item toevoegen…" style="flex:1;">
+        <button onclick="addCourseItem('${e.id}', '${def.key}')">+</button>
+      </div>
+    </div>`;
+}
+
+function addCourseItem(entryId, key){
+  const entry = entries.find(x=>x.id===entryId);
+  const def = COURSE_DEFS.find(d=>d.key===key);
+  if (!entry || !def) return;
+  const inp = document.getElementById('ca_'+key+'_'+entryId);
+  const val = inp.value.trim();
+  if (!val) return;
+  const items = getCourseItems(entry, def);
+  items.push(val);
+  inp.value = '';
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function deleteCourseItem(entryId, key, index){
+  const entry = entries.find(x=>x.id===entryId);
+  const def = COURSE_DEFS.find(d=>d.key===key);
+  if (!entry || !def) return;
+  const items = getCourseItems(entry, def);
+  items.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
 }
 
 function renderWineList(e){
@@ -1703,10 +1759,11 @@ function deleteBijlage(entryId, index){
 /* ============================================================
    GERECHTENBIBLIOTHEEK
    Sla een gerecht met zijn ingrediënten één keer op, en roep het
-   daarna telkens opnieuw op vanuit een etentje - de ingrediënten
-   belanden dan automatisch in de boodschappenlijst.
+   daarna telkens opnieuw op vanuit een etentje - de naam komt bij
+   de juiste gang terecht, en de ingrediënten belanden automatisch
+   in de boodschappenlijst.
    ============================================================ */
-const GERECHT_CATLABEL = {aperitief:'Aperitief', voorgerecht:'Voorgerecht', hoofdgerecht:'Hoofdgerecht', dessert:'Dessert'};
+const GERECHT_CATLABEL = {aperitief:'Aperitief', sharing:'Sharing bij aperitief', amuses:'Amuses', voorgerecht:'Voorgerecht', hoofdgerecht:'Hoofdgerecht', dessert:'Dessert'};
 
 function loadGerechtenLocal(){
   try{ const raw = localStorage.getItem(GERECHTEN_LOCAL_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
@@ -1811,16 +1868,20 @@ function renderGerechtPickerOptions(entryId){
   return sorted.map(g => `<button onclick="event.stopPropagation(); applyGerechtToEntry('${entryId}', '${g.id}')">${GERECHT_CATLABEL[g.categorie]||''} — ${escapeHtml(g.naam)}</button>`).join('');
 }
 
-const COURSE_FIELD_BY_CAT = {aperitief:'aperitief', voorgerecht:'voorgerecht', hoofdgerecht:'hoofdgerecht', dessert:'dessert'};
+const COURSE_FIELD_BY_CAT = {aperitief:'aperitief', sharing:'sharing', amuses:'amuses', voorgerecht:'voorgerecht', hoofdgerecht:'hoofdgerecht', dessert:'dessert'};
 
 function applyGerechtToEntry(entryId, gerechtId){
   const entry = entries.find(x=>x.id===entryId);
   const g = gerechten.find(x=>x.id===gerechtId);
   if (!entry || !g) return;
 
-  // Naam toevoegen aan het juiste menuveld
-  const field = COURSE_FIELD_BY_CAT[g.categorie] || 'voorgerecht';
-  entry[field] = entry[field] ? (entry[field] + '\n' + g.naam) : g.naam;
+  // Naam toevoegen aan de juiste gang (als los item, net als handmatig toegevoegde items)
+  const key = COURSE_FIELD_BY_CAT[g.categorie] || 'voorgerecht';
+  const def = COURSE_DEFS.find(d=>d.key===key);
+  if (def){
+    const items = getCourseItems(entry, def);
+    items.push(g.naam);
+  }
 
   // Ingrediënten toevoegen aan de boodschappenlijst (zonder exacte duplicaten)
   const bestaande = itemsOf(entry);
@@ -2074,10 +2135,6 @@ function openEditor(id){
   document.getElementById('f_date').value = e ? e.date : '';
   document.getElementById('f_name').value = e ? e.name : '';
   document.getElementById('f_guests').value = e ? e.guests : '';
-  document.getElementById('f_aperitief').value = e ? e.aperitief : '';
-  document.getElementById('f_voorgerecht').value = e ? e.voorgerecht : '';
-  document.getElementById('f_hoofdgerecht').value = e ? e.hoofdgerecht : '';
-  document.getElementById('f_dessert').value = e ? e.dessert : '';
   document.getElementById('f_wijnen').value = e ? e.wijnen : '';
   document.getElementById('f_opdienstijl').value = e ? (e.opdienstijl||'') : '';
   document.getElementById('f_boodschappen').value = e ? (e.boodschappen||'') : '';
@@ -2121,24 +2178,28 @@ function saveEntry(){
   const name = document.getElementById('f_name').value.trim();
   if (!name){ alert('Geef een naam/gelegenheid op.'); return; }
 
+  const existing = editingId ? entries.find(x=>x.id===editingId) : null;
+
   const entry = {
     id: editingId || ('e_' + Date.now()),
     type: document.getElementById('f_type').value,
     date: document.getElementById('f_date').value,
     name: name,
     guests: document.getElementById('f_guests').value.trim(),
-    aperitief: document.getElementById('f_aperitief').value.trim(),
-    voorgerecht: document.getElementById('f_voorgerecht').value.trim(),
-    hoofdgerecht: document.getElementById('f_hoofdgerecht').value.trim(),
-    dessert: document.getElementById('f_dessert').value.trim(),
+    aperitiefItems: existing ? (existing.aperitiefItems || []) : [],
+    sharingItems: existing ? (existing.sharingItems || []) : [],
+    amusesItems: existing ? (existing.amusesItems || []) : [],
+    voorgerechtItems: existing ? (existing.voorgerechtItems || []) : [],
+    hoofdgerechtItems: existing ? (existing.hoofdgerechtItems || []) : [],
+    dessertItems: existing ? (existing.dessertItems || []) : [],
     wijnen: document.getElementById('f_wijnen').value.trim(),
-    wijnenLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).wijnenLijst : []) || [],
-    voedingLijst: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).voedingLijst : []) || [],
-    bijlagen: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).bijlagen : []) || [],
+    wijnenLijst: existing ? (existing.wijnenLijst || []) : [],
+    voedingLijst: existing ? (existing.voedingLijst || []) : [],
+    bijlagen: existing ? (existing.bijlagen || []) : [],
     opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
-    status: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).status : 'idee') || 'idee',
+    status: existing ? (existing.status || 'idee') : 'idee',
     boodschappen: document.getElementById('f_boodschappen').value.trim(),
-    boodschappenChecked: (editingId && entries.find(x=>x.id===editingId) ? entries.find(x=>x.id===editingId).boodschappenChecked : {}) || {},
+    boodschappenChecked: existing ? (existing.boodschappenChecked || {}) : {},
     eval_wijnen: document.getElementById('f_eval_wijnen').value.trim(),
     eval_eten: document.getElementById('f_eval_eten').value.trim(),
     eval_sfeer: document.getElementById('f_eval_sfeer').value.trim(),
