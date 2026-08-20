@@ -1,0 +1,2596 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dineetjes">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+<link rel="icon" sizes="32x32" href="icon-32.png">
+<title>Dineetjes - Danny &amp; Martine</title>
+
+<!-- Firebase (compat SDK, makkelijk in te vullen) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<style>
+  :root{
+    --paper:#f6f1e6;
+    --paper-dark:#ece3d0;
+    --ink:#3a2e22;
+    --wine:#7a2e2e;
+    --wine-dark:#5e2222;
+    --gold:#b8863f;
+    --green:#5c7a4f;
+    --muted:#8a7a63;
+    --card:#fffdf8;
+    --border:#ddd0b5;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0;
+    font-family:Georgia, "Times New Roman", serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding-bottom:90px;
+  }
+  header{
+    background:linear-gradient(180deg, var(--wine) 0%, var(--wine-dark) 100%);
+    color:#f6ead9;
+    padding:22px 18px 26px;
+    text-align:center;
+    border-bottom:4px solid var(--gold);
+  }
+  header h1{
+    margin:0;
+    font-size:1.6em;
+    letter-spacing:0.03em;
+    font-weight:400;
+  }
+  header .sub{
+    font-size:0.85em;
+    opacity:0.85;
+    margin-top:4px;
+    font-style:italic;
+  }
+
+  .toolbar{
+    display:flex;
+    gap:8px;
+    padding:14px 16px 6px;
+  }
+  .toolbar select, .toolbar input{
+    font-family:inherit;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    background:var(--card);
+    color:var(--ink);
+    font-size:0.9em;
+  }
+  .toolbar select{ flex:1; }
+
+  #list{
+    padding:10px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 2px 6px rgba(58,46,34,0.08);
+  }
+  .card-head{
+    padding:14px 16px 10px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .card-head .titles{ flex:1; }
+  .card-title{
+    font-size:1.2em;
+    color:var(--wine);
+    margin:0 0 2px;
+  }
+  .card-meta{
+    font-size:0.82em;
+    color:var(--muted);
+  }
+  .badge{
+    display:inline-block;
+    font-size:0.7em;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 9px;
+    border-radius:12px;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    margin-right:6px;
+  }
+  .stars{
+    color:var(--gold);
+    font-size:1em;
+    white-space:nowrap;
+  }
+  .card-cost{
+    font-family:-apple-system, sans-serif;
+    font-size:0.78em;
+    color:var(--wine-dark);
+    white-space:nowrap;
+    margin-top:3px;
+  }
+  .bijlage-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 0;
+    border-bottom:1px dotted var(--border);
+    font-size:0.95em;
+  }
+  .bijlage-row:last-of-type{ border-bottom:none; }
+  .bijlage-row a{
+    flex:1;
+    color:var(--wine-dark);
+    text-decoration:none;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .bijlage-row a:before{ content:"📎 "; }
+  .bijlage-add-row{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .bijlage-add-row input{
+    font-family:-apple-system, sans-serif;
+    font-size:0.88em;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .bijlage-add-row input.ba-name{ flex:1; }
+  .bijlage-add-row input.ba-url{ flex:2; }
+  .bijlage-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 12px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .bijlage-hint{
+    font-size:0.78em;
+    color:var(--muted);
+    margin-top:4px;
+    font-family:-apple-system, sans-serif;
+  }
+  .bijlage-filebtn{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    cursor:pointer;
+  }
+  .chevron{
+    font-size:1.1em;
+    color:var(--muted);
+    transition:transform 0.2s ease;
+    margin-top:2px;
+  }
+  .card.open .chevron{ transform:rotate(90deg); }
+
+  .card-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height 0.25s ease;
+  }
+  .card.open .card-body{ max-height:2000px; }
+  .card-body-inner{ padding:6px 16px 16px; }
+
+  .section-label{
+    font-size:0.75em;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--gold);
+    margin:12px 0 4px;
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+  }
+  .section-label:first-child{ margin-top:4px; }
+  .menu-line{
+    font-size:0.95em;
+    line-height:1.5;
+    padding-left:2px;
+  }
+  .wine-line{
+    font-size:0.95em;
+    line-height:1.5;
+    color:var(--wine-dark);
+  }
+  .wine-list{
+    margin:2px 0 0;
+  }
+  .wine-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    border-bottom:1px dotted var(--border);
+    font-size:0.95em;
+    gap:8px;
+  }
+  .wine-row:last-of-type{ border-bottom:none; }
+  .wine-row .wr-name{ flex:1; }
+  .wine-row .wr-name.wr-done{
+    text-decoration:line-through;
+    color:var(--muted);
+  }
+  .wine-row .wr-box{
+    width:18px;
+    height:18px;
+    min-width:18px;
+    border-radius:5px;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.7em;
+    color:#fff;
+  }
+  .wine-row .wr-box.checked{
+    background:var(--green);
+    border-color:var(--green);
+  }
+  .wine-row .wr-cart{
+    font-size:0.85em;
+    opacity:0.3;
+    filter:grayscale(1);
+    padding:0 2px;
+  }
+  .wine-row .wr-cart.active{
+    opacity:1;
+    filter:none;
+  }
+  .wine-row .wr-price{
+    font-family:-apple-system, sans-serif;
+    color:var(--wine-dark);
+    white-space:nowrap;
+  }
+  .wine-row .wr-del{
+    font-family:-apple-system, sans-serif;
+    font-size:0.75em;
+    color:#a33;
+    white-space:nowrap;
+  }
+  .wine-total{
+    display:flex;
+    justify-content:space-between;
+    padding-top:8px;
+    margin-top:2px;
+    font-weight:600;
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    color:var(--wine);
+  }
+  .wine-add-row{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .wine-add-row input{
+    font-family:-apple-system, sans-serif;
+    font-size:0.88em;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .wine-add-row input.wa-name{ flex:2; }
+  .wine-add-row input.wa-price{ flex:1; }
+  .wine-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 12px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .eval-box{
+    background:var(--paper-dark);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:0.92em;
+    font-style:italic;
+    color:var(--ink);
+    margin-top:4px;
+  }
+  .guests{
+    font-size:0.9em;
+    color:var(--ink);
+  }
+  .shop-list{
+    list-style:none;
+    margin:4px 0 0;
+    padding:0;
+  }
+  .shop-item{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:6px 2px;
+    font-size:0.95em;
+    cursor:pointer;
+  }
+  .shop-box{
+    width:18px;
+    height:18px;
+    min-width:18px;
+    border-radius:5px;
+    border:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .shop-item.checked .shop-box{
+    background:var(--green);
+    border-color:var(--green);
+    color:#fff;
+    font-size:0.75em;
+  }
+  .shop-item.checked span.txt{
+    text-decoration:line-through;
+    color:var(--muted);
+  }
+  .status-picker{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin:2px 0 14px;
+  }
+  .status-picker button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.72em;
+    padding:6px 10px;
+    border-radius:16px;
+    border:1px solid var(--border);
+    background:var(--paper);
+    color:var(--muted);
+  }
+  .status-picker button.active{
+    background:var(--wine);
+    border-color:var(--wine);
+    color:#f6ead9;
+  }
+  .status-badge{
+    display:inline-block;
+    font-size:0.7em;
+    padding:3px 9px;
+    border-radius:12px;
+    background:var(--wine);
+    color:#f6ead9;
+    margin-right:6px;
+  }
+
+  .tabs{
+    display:flex;
+    gap:0;
+    padding:12px 16px 0;
+  }
+  .tab-btn{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    padding:11px 8px;
+    border:1px solid var(--border);
+    background:var(--paper-dark);
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .tab-btn:first-child{ border-radius:10px 0 0 10px; border-right:none; }
+  .tab-btn:last-child{ border-radius:0 10px 10px 0; }
+  .tab-btn.active{
+    background:var(--wine);
+    color:#f6ead9;
+    border-color:var(--wine);
+    font-weight:600;
+  }
+
+  .shop-pick-list{
+    padding:14px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .shop-pick-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 6px rgba(58,46,34,0.08);
+  }
+  .shop-pick-card .sp-name{
+    font-size:1.1em;
+    color:var(--wine);
+  }
+  .shop-pick-card .sp-meta{
+    font-size:0.8em;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .shop-pick-card .sp-count{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    padding:6px 12px;
+    border-radius:14px;
+    white-space:nowrap;
+  }
+
+  .back-btn{
+    background:none;
+    border:none;
+    color:var(--wine);
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    padding:14px 16px 0;
+    cursor:pointer;
+  }
+  .shop-full-title{
+    color:var(--wine);
+    padding:6px 16px 0;
+    font-weight:400;
+    font-size:1.4em;
+  }
+  .progress-wrap{ padding:10px 16px 4px; }
+  .progress-bar-bg{
+    background:var(--paper-dark);
+    border-radius:10px;
+    height:10px;
+    overflow:hidden;
+  }
+  .progress-bar-fill{
+    background:var(--green);
+    height:100%;
+    width:0%;
+    transition:width 0.25s ease;
+  }
+
+  .shop-list.big{
+    padding:8px 16px 30px;
+    margin:0;
+  }
+  .shop-list.big .shop-item{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 14px;
+    margin-bottom:8px;
+    font-size:1.08em;
+  }
+  .shop-list.big .shop-box{
+    width:26px;
+    height:26px;
+    min-width:26px;
+    border-radius:7px;
+  }
+  .shop-list.big .shop-item.checked{
+    opacity:0.6;
+  }
+
+  .bestel-sheet{
+    background:var(--card);
+    margin:14px 16px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    padding:20px 18px;
+    box-shadow:0 2px 8px rgba(58,46,34,0.08);
+  }
+  .bestel-sheet h2{
+    color:var(--wine);
+    font-weight:400;
+    margin:0 0 2px;
+    font-size:1.4em;
+  }
+  .bestel-meta{
+    font-size:0.85em;
+    color:var(--muted);
+    font-family:-apple-system, sans-serif;
+    margin-bottom:16px;
+  }
+  .bestel-section{ margin-top:18px; }
+  .bestel-section h3{
+    font-size:0.78em;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--gold);
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+    border-bottom:1px solid var(--border);
+    padding-bottom:5px;
+    margin:0 0 8px;
+  }
+  .bestel-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:5px 0;
+    font-size:0.95em;
+  }
+  .bestel-row.done{
+    color:var(--muted);
+    text-decoration:line-through;
+  }
+  .bestel-total{
+    display:flex;
+    justify-content:space-between;
+    font-family:-apple-system, sans-serif;
+    font-weight:700;
+    color:var(--wine);
+    border-top:1px solid var(--border);
+    padding-top:10px;
+    margin-top:12px;
+    font-size:1.05em;
+  }
+  .bestel-empty{
+    font-style:italic;
+    color:var(--muted);
+    font-size:0.9em;
+  }
+  .print-btn{
+    display:block;
+    width:100%;
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:13px;
+    border-radius:10px;
+  }
+  @media print{
+    header, .tabs, .back-btn, .print-btn, .fab{ display:none !important; }
+    body{ background:#fff; }
+    .bestel-sheet{ box-shadow:none; border:none; margin:0; }
+  }
+
+  .gerecht-add-form{
+    background:var(--card);
+    margin:14px 16px 8px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    padding:16px;
+  }
+  .gerecht-add-form .field label{
+    font-family:-apple-system, sans-serif;
+  }
+  .gerechten-list{
+    padding:6px 16px 30px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .gerecht-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .gerecht-head{
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+  }
+  .gerecht-head .gc-name{
+    color:var(--wine);
+    font-size:1.05em;
+  }
+  .gerecht-head .gc-cat{
+    font-family:-apple-system, sans-serif;
+    font-size:0.7em;
+    text-transform:uppercase;
+    background:var(--paper-dark);
+    color:var(--wine-dark);
+    padding:3px 9px;
+    border-radius:10px;
+    margin-top:3px;
+    display:inline-block;
+  }
+  .gerecht-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height 0.2s ease;
+  }
+  .gerecht-card.open .gerecht-body{ max-height:2000px; }
+  .gerecht-body-inner{
+    padding:0 14px 14px;
+    font-size:0.92em;
+  }
+  .gerecht-ing{
+    padding:3px 0;
+    color:var(--ink);
+  }
+  .gerecht-actions{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .gerecht-actions button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.8em;
+    border:1px solid var(--border);
+    background:var(--paper);
+    color:var(--wine-dark);
+    padding:6px 11px;
+    border-radius:8px;
+  }
+  .gerecht-actions button.danger{ color:#a33; border-color:#e0c0c0; }
+  .gerecht-foto{
+    width:100%;
+    max-height:260px;
+    object-fit:cover;
+    border-radius:10px;
+    margin-top:10px;
+    display:block;
+  }
+  .gerecht-edit{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dotted var(--border);
+  }
+
+  /* Picker binnen een etentje-kaart om een gerecht uit de bibliotheek te kiezen */
+  .gerecht-picker{
+    margin-top:8px;
+    display:none;
+    flex-direction:column;
+    gap:6px;
+  }
+  .gerecht-picker.open{ display:flex; }
+  .gerecht-picker button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.85em;
+    text-align:left;
+    background:var(--paper);
+    border:1px solid var(--border);
+    color:var(--ink);
+    padding:8px 10px;
+    border-radius:8px;
+  }
+  .shop-list.big .shop-item{
+    justify-content:space-between;
+  }
+  .shop-list.big .shop-item .shop-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+  }
+  .shop-del{
+    font-family:-apple-system, sans-serif;
+    font-size:0.8em;
+    color:#a33;
+    padding:4px 8px;
+    flex-shrink:0;
+  }
+  .shop-add-row{
+    display:flex;
+    gap:8px;
+    padding:0 16px 30px;
+  }
+  .shop-add-row input{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:1em;
+    padding:11px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .shop-add-row button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.9em;
+    background:var(--wine);
+    color:#f6ead9;
+    border:none;
+    padding:0 16px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .card-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .card-actions button{
+    font-family:-apple-system, sans-serif;
+    font-size:0.82em;
+    border:1px solid var(--border);
+    background:var(--paper);
+    color:var(--wine-dark);
+    padding:7px 12px;
+    border-radius:8px;
+  }
+  .card-actions button.danger{
+    color:#a33;
+    border-color:#e0c0c0;
+  }
+
+  .fab{
+    position:fixed;
+    right:20px;
+    bottom:26px;
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:var(--wine);
+    color:#f6ead9;
+    font-size:1.8em;
+    border:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .sync-note{
+    text-align:center;
+    font-size:0.72em;
+    color:var(--muted);
+    padding:6px 20px 0;
+    font-family:-apple-system, sans-serif;
+  }
+
+  /* Modal / editor */
+  #overlay{
+    position:fixed; inset:0;
+    background:rgba(58,46,34,0.55);
+    display:none;
+    align-items:flex-end;
+    z-index:50;
+  }
+  #overlay.show{ display:flex; }
+  #editor{
+    background:var(--paper);
+    width:100%;
+    max-height:92vh;
+    overflow-y:auto;
+    border-radius:20px 20px 0 0;
+    padding:18px 18px 30px;
+  }
+  #editor h2{
+    color:var(--wine);
+    margin:0 0 14px;
+    font-weight:400;
+  }
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block;
+    font-size:0.78em;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--gold);
+    margin-bottom:4px;
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    font-family:Georgia, serif;
+    font-size:1em;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+
+  .star-picker{ font-size:1.6em; color:var(--border); }
+  .star-picker span{ cursor:pointer; padding:0 2px; }
+  .star-picker span.active{ color:var(--gold); }
+
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .modal-actions button{
+    flex:1;
+    font-family:-apple-system, sans-serif;
+    font-size:0.95em;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+  }
+  #saveBtn{ background:var(--wine); color:#f6ead9; }
+  #cancelBtn{ background:var(--paper-dark); color:var(--ink); }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-style:italic;
+    padding:40px 20px;
+    font-size:0.95em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍷 Dineetjes</h1>
+  <div class="sub">Lunches &amp; diners bij Danny &amp; Martine</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabOverzicht" onclick="switchTab('overzicht')">📋 Overzicht</button>
+  <button class="tab-btn" id="tabBoodschappen" onclick="switchTab('boodschappen')">🛒 Boodschappen</button>
+  <button class="tab-btn" id="tabGerechten" onclick="switchTab('gerechten')">📖 Gerechten</button>
+  <button class="tab-btn" id="tabWijnenBib" onclick="switchTab('wijnenbib')">🍷 Wijnen</button>
+</div>
+
+<div id="viewOverzicht">
+<div class="toolbar">
+  <select id="filterType">
+    <option value="alle">Alle etentjes</option>
+    <option value="lunch">Enkel lunches</option>
+    <option value="diner">Enkel diners</option>
+  </select>
+</div>
+
+<div class="sync-note" id="syncNote">Lokale opslag (Firebase nog niet gekoppeld)</div>
+
+<div id="list"></div>
+</div>
+
+<div id="viewBoodschappen" style="display:none;">
+  <div id="shopPickerScreen">
+    <div class="shop-pick-list" id="shopPickList"></div>
+  </div>
+  <div id="shopFullScreen" style="display:none;">
+    <button class="back-btn" onclick="closeShopFull()">← terug</button>
+    <h2 id="shopFullTitle" class="shop-full-title"></h2>
+    <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="shopProgressBar"></div></div></div>
+    <ul class="shop-list big" id="shopFullList"></ul>
+    <div class="shop-add-row">
+      <input type="text" id="newShopItem" placeholder="Nieuw item…">
+      <button onclick="addShopItem()">+ Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<div id="bestelScreen" style="display:none;">
+  <button class="back-btn" onclick="closeBestelForm()">← terug</button>
+  <div class="bestel-sheet" id="bestelSheet"></div>
+  <div style="padding:0 16px 30px;">
+    <button class="print-btn" onclick="window.print()">🖨️ Printen / delen</button>
+  </div>
+</div>
+
+<div id="miseScreen" style="display:none;">
+  <button class="back-btn" onclick="closeMiseFull()">← terug</button>
+  <h2 id="miseFullTitle" class="shop-full-title"></h2>
+  <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="miseProgressBar"></div></div></div>
+  <div id="miseFullList"></div>
+</div>
+
+<div id="viewGerechten" style="display:none;">
+  <div class="gerecht-add-form">
+    <div class="field">
+      <label>Naam gerecht</label>
+      <input type="text" id="g_naam" placeholder="bv. Garnalencocktail">
+    </div>
+    <div class="field">
+      <label>Categorie</label>
+      <select id="g_categorie">
+        <option value="aperitief">Aperitief</option>
+        <option value="sharing">Sharing bij aperitief</option>
+        <option value="amuses">Amuses</option>
+        <option value="voorgerecht" selected>Voorgerecht</option>
+        <option value="hoofdgerecht">Hoofdgerecht</option>
+        <option value="dessert">Dessert</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Ingrediënten (één per lijn)</label>
+      <textarea id="g_ingredienten" placeholder="bv. Grijze garnalen&#10;IJsbergsla&#10;Mayonaise&#10;Cognac"></textarea>
+    </div>
+    <div class="field">
+      <label>Voorbereiding / mise en place (optioneel, één stap per lijn — dit worden aftikbare taken)</label>
+      <textarea id="g_voorbereiding" placeholder="bv. Eieren koken, pellen&#10;Mimosa van ei maken&#10;Tomaten pellen&#10;Blokjes snijden&#10;Peterselie hakken&#10;Citroen partjes snijden"></textarea>
+    </div>
+    <div class="field">
+      <label>Bereiding op het moment zelf (optioneel, één stap per lijn)</label>
+      <textarea id="g_bereiding" placeholder="Laat leeg als je enkel de ingrediënten wil bewaren&#10;bv. Meng de garnalen met de saus&#10;Verdeel over de glazen"></textarea>
+    </div>
+    <div class="field">
+      <label>Foto van resultaat (optioneel)</label>
+      <label class="bijlage-filebtn" style="display:inline-flex;">📷 Kies foto<input type="file" accept="image/*" id="g_foto_file" style="display:none;" onchange="handleGerechtFotoPreview()"></label>
+      <div id="g_foto_preview" style="font-family:-apple-system,sans-serif; font-size:0.78em; color:var(--muted); margin-top:6px;">Geen foto gekozen</div>
+    </div>
+    <button class="print-btn" onclick="saveGerecht()">+ Gerecht bewaren</button>
+  </div>
+  <div id="gerechtenList" class="gerechten-list"></div>
+</div>
+
+<div id="viewWijnenBib" style="display:none;">
+  <div class="gerecht-add-form">
+    <div class="field">
+      <label>Naam wijn</label>
+      <input type="text" id="wb_naam" placeholder="bv. Saint-Véran Maison Joseph Drouhin 2023">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Prijs per fles</label>
+        <input type="text" id="wb_prijs" placeholder="€">
+      </div>
+      <div class="field">
+        <label>Druif / regio (optioneel)</label>
+        <input type="text" id="wb_regio" placeholder="bv. Chardonnay, Bourgogne">
+      </div>
+    </div>
+    <div class="field">
+      <label>Ervaring / tasting notes</label>
+      <textarea id="wb_ervaring" placeholder="Hoe smaakte hij? Bij welk gerecht paste hij goed?"></textarea>
+    </div>
+    <div class="field">
+      <label>Score</label>
+      <div class="star-picker" id="wbStarPicker">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+    </div>
+    <button class="print-btn" onclick="saveWijnBib()">+ Wijn bewaren</button>
+  </div>
+  <div id="wijnenBibList" class="gerechten-list"></div>
+</div>
+
+<button class="fab" onclick="openEditor()">+</button>
+
+<!-- Editor overlay -->
+<div id="overlay">
+  <div id="editor">
+    <h2 id="editorTitle">Nieuw etentje</h2>
+
+    <div class="row2">
+      <div class="field">
+        <label>Type</label>
+        <select id="f_type">
+          <option value="lunch">Lunch</option>
+          <option value="diner">Diner</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Datum</label>
+        <input type="date" id="f_date">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Naam / gelegenheid</label>
+      <input type="text" id="f_name" placeholder="bv. Lunch met G&amp;G en zus Griet">
+    </div>
+
+    <div class="field">
+      <label>Gasten</label>
+      <input type="text" id="f_guests" placeholder="bv. Griet, Gilbert, zus van Griet">
+    </div>
+
+    <div class="field" style="font-size:0.85em; color:var(--muted); font-family:-apple-system,sans-serif; background:var(--paper-dark); border-radius:8px; padding:10px 12px;">
+      Aperitief, sharing, amuses, voorgerecht, hoofdgerecht en dessert beheer je per item rechtstreeks in de kaart zelf: open het etentje na het bewaren, en kies er per sectie een gerecht uit je bibliotheek — of maak meteen een nieuw gerecht mét ingrediënten aan. Zo blijft je boodschappenlijst altijd kloppen, en verschijnt de mise en place van dat gerecht automatisch bij dit etentje.
+    </div>
+
+    <div class="field">
+      <label>Wijnen — context (bij welk gerecht, optioneel)</label>
+      <textarea id="f_wijnen" placeholder="bv. Saint-Véran bij het hoofdgerecht, Crémant bij aperitief..."></textarea>
+      <div style="font-size:0.78em; color:var(--muted); margin-top:2px; font-family:-apple-system,sans-serif;">Wijnen zelf kies je (of maak je aan) in de kaart, onder "Wijnen" — uit je wijnkelder-bibliotheek.</div>
+    </div>
+
+    <div class="field">
+      <label>Manier van opdienen</label>
+      <textarea id="f_opdienstijl" placeholder="bv. Rivierkreeftencocktail in champagne coupe, mosselen individueel in klein schaaltje..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Boodschappenlijst (één item per lijn)</label>
+      <textarea id="f_boodschappen" placeholder="bv. Kalfsschenkel voor osso buco&#10;Stracciatella&#10;Verse basilicum"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — wijnen</label>
+      <textarea id="f_eval_wijnen" placeholder="Hoe vielen de wijnen? Zou je iets anders kiezen?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — eten</label>
+      <textarea id="f_eval_eten" placeholder="Hoe viel het menu? Wat werkte goed, wat niet?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Evaluatie — sfeer</label>
+      <textarea id="f_eval_sfeer" placeholder="Hoe was de avond/sfeer zelf?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Score</label>
+      <div class="star-picker" id="starPicker">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="cancelBtn" onclick="closeEditor()">Annuleren</button>
+      <button id="saveBtn" onclick="saveEntry()">Bewaren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FIREBASE CONFIG
+   Vul hier je eigen wiezen-club config in (Firebase console >
+   Project settings > je webapp > SDK setup and configuration).
+   Zolang dit leeg/ongewijzigd blijft, werkt de app lokaal
+   (localStorage) - je verliest dus niets, sync komt er dan
+   gewoon nog niet bij.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
+  authDomain: "wiezen-club.firebaseapp.com",
+  projectId: "wiezen-club",
+  storageBucket: "wiezen-club.firebasestorage.app",
+  messagingSenderId: "184449254432",
+  appId: "1:184449254432:web:e4f4f93acae57a9a736845",
+  measurementId: "G-94G6872QG4"
+};
+
+let db = null;
+let storage = null;
+let useFirebase = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  storage = firebase.storage();
+  useFirebase = true;
+} catch (e) {
+  console.warn("Firebase niet beschikbaar, gebruik lokale opslag.", e);
+}
+
+/* ============================================================
+   FOTO UPLOAD (bonnetjes / bevestigingen / receptfoto's)
+   Comprimeert een foto in de browser (max 1600px, JPEG ~0.7)
+   en zet die rechtstreeks in Firebase Storage. Geen aparte
+   linkjes meer nodig - gewoon "Kies bestand" tikken.
+   ============================================================ */
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadBijlageFoto(file, pad){
+  if (!storage) throw new Error('Storage niet beschikbaar');
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (isPdf){
+    const bestandsnaam = pad + '_' + Date.now() + '.pdf';
+    const ref = storage.ref().child('bonnetjes/' + bestandsnaam);
+    await ref.put(file, {contentType:'application/pdf'});
+    return await ref.getDownloadURL();
+  }
+  let blob = await compressImage(file, 1600, 0.72);
+  // Als het nog steeds te groot is, nog wat harder comprimeren
+  if (blob.size > 900000){
+    blob = await compressImage(file, 1200, 0.55);
+  }
+  const bestandsnaam = pad + '_' + Date.now() + '.jpg';
+  const ref = storage.ref().child('bonnetjes/' + bestandsnaam);
+  await ref.put(blob);
+  return await ref.getDownloadURL();
+}
+
+document.getElementById('syncNote').textContent = useFirebase
+  ? "☁️ Gesynchroniseerd via Firebase (wiezen-club)"
+  : "Lokale opslag (Firebase nog niet gekoppeld)";
+
+const LOCAL_KEY = "dineetjes_entries_v1";
+const GERECHTEN_LOCAL_KEY = "dineetjes_gerechten_v1";
+const WIJNENBIB_LOCAL_KEY = "dineetjes_wijnenbib_v1";
+let entries = [];
+let gerechten = [];
+let wijnenBib = [];
+let editingId = null;
+let currentStars = 0;
+let wbCurrentStars = 0;
+/* Onthoudt welke kaarten open staan, zodat ELKE herrender - ook
+   die veroorzaakt door de Firestore-sync zelf - dit automatisch
+   respecteert, in plaats van dat de kaart onverwacht dichtklapt. */
+let openCardIds = new Set();
+/* Zelfde principe voor de Gerechten-bibliotheek: welke kaarten
+   open staan, en welke er in "recept bewerken"-stand staan. */
+let openGerechtIds = new Set();
+let editGerechtIds = new Set();
+/* Foto die net gekozen is in het "nieuw gerecht"-formulier, nog
+   niet geüpload - dat gebeurt pas bij het effectief bewaren. */
+let pendingGerechtFoto = null;
+/* Per gerecht-id de nieuw gekozen (nog niet geüploade) foto tijdens bewerken. */
+let pendingGerechtEditFoto = {};
+
+/* ============================================================
+   MENUGANGEN
+   Elke gang (aperitief, sharing, amuses, voor-, hoofdgerecht,
+   dessert) wordt bewaard als een lijst van losse items, zodat je
+   per item kan toevoegen of verwijderen - net als bij wijnen en
+   voeding. Oude etentjes met platte tekst (vóór deze update)
+   worden bij het openen automatisch omgezet naar zo'n lijst.
+   ============================================================ */
+const COURSE_DEFS = [
+  {key:"aperitief", label:"Aperitief", field:"aperitiefItems", legacy:"aperitief"},
+  {key:"sharing", label:"Sharing bij aperitief", field:"sharingItems", legacy:null},
+  {key:"amuses", label:"Amuses", field:"amusesItems", legacy:null},
+  {key:"voorgerecht", label:"Voorgerecht(en)", field:"voorgerechtItems", legacy:"voorgerecht"},
+  {key:"hoofdgerecht", label:"Hoofdgerecht", field:"hoofdgerechtItems", legacy:"hoofdgerecht"},
+  {key:"dessert", label:"Dessert", field:"dessertItems", legacy:"dessert"}
+];
+
+function getCourseItems(e, def){
+  if (!Array.isArray(e[def.field])){
+    if (def.legacy && typeof e[def.legacy] === 'string' && e[def.legacy].trim()){
+      e[def.field] = e[def.legacy].split('\n').map(s=>s.trim()).filter(Boolean);
+    } else {
+      e[def.field] = [];
+    }
+  }
+  return e[def.field];
+}
+
+const STATUSES = [
+  {key:"idee", label:"💭 Idee"},
+  {key:"datum", label:"📅 Datum bepaald"},
+  {key:"menu", label:"🍽️ Menu"},
+  {key:"wijnen", label:"🍷 Wijnen"},
+  {key:"besteld", label:"🛒 Besteld"},
+  {key:"opdienstijl", label:"🍴 Opdienstijl"},
+  {key:"afgerond", label:"✅ Afgerond"}
+];
+function statusLabel(key){
+  const s = STATUSES.find(x=>x.key===key);
+  return s ? s.label : STATUSES[0].label;
+}
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveLocal(){
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(entries));
+}
+
+function seedIfEmpty(){
+  if (entries.length) return;
+  entries = [
+    {
+      id: "seed-lunch-gg",
+      type: "lunch",
+      name: "Lunch met G&G en zus Griet",
+      date: "2026-08-12",
+      guests: "Griet, Gilbert, zus van Griet",
+      aperitief: "Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé (bij binnenkomst) + burrata dip\nWhispering Angel rosé (overgang naar kleine gerechtjes)",
+      voorgerecht: "1. Tomatentartaar met stracciatella, pijnboompitten, basilicumolie\n2. Garnalencocktail in champagne coupe\n3. Tartaar van zalm met zure room\n4. Mosselen in kruidenboter (uitgehaald)\n5. Scampi met groenten",
+      hoofdgerecht: "Osso buco met pasta",
+      dessert: "Fijn gesneden aardbeien met vanille- en chocoladesaus",
+      wijnen: "",
+      wijnenLijst: [
+        {naam: "Veuve Ambal Crémant de Bourgogne Rosé (aperitief)", prijs: 0, gekocht: true, inBoodschappen: false},
+        {naam: "Whispering Angel rosé (bij kleine gerechtjes)", prijs: 0, gekocht: true, inBoodschappen: false},
+        {naam: "Soave Classico 'Monte Carbonare' Suavia (bij osso buco)", prijs: 23.00, gekocht: true, inBoodschappen: false}
+      ],
+      voedingLijst: [],
+      opdienstijl: "Tomatentartaar met stracciatella: klein lang wit bordje\nGarnalencocktail: champagne coupe\nMosselen: uitgehaald, klein schaaltje",
+      status: "besteld",
+      boodschappen: "Burrata (2 bollen, voor dip)\nStokbrood\nPurperen tomaatjes (voldoende voor 5)\nStracciatella (2 bakjes)\nPijnboompitten\nVerse basilicum (voor basilicumolie)\nNeutrale olie (druivenpitolie) voor basilicumolie\nGrijze garnalen (5 porties)\nIJsbergsla\nMayonaise\nKetchup\nCognac\nCitroen\nVerse zalmfilet (sushi-kwaliteit)\nZure room\nRode ui\nKappertjes\nBieslook of dille\nVerse mosselen (voor 5 personen)\nBoter\nLook (knoflook)\nVerse peterselie\nScampi (10 stuks)\nGroenten (courgette, paprika, cherrytomaatjes)\nKalfsschenkel voor osso buco (5 stuks)\nUi\nWortel\nBleekselder\nTomatenblokjes of -puree\nWitte wijn (voor stoofpot)\nKalfs- of runderbouillon\nVerse pasta (tagliatelle of pappardelle)\nParmezaankaas\nCitroen (voor gremolata)\nVerse aardbeien\nVanillesaus\nChocoladesaus",
+      boodschappenChecked: {},
+      evaluatie: "",
+      score: 0
+    },
+    {
+      id: "seed-diner-pj",
+      type: "diner",
+      name: "Diner met Patrick en Joris",
+      date: "2026-08-20",
+      guests: "Patrick, Joris",
+      aperitief: "Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé (bij binnenkomst)\nWhispering Angel rosé + stokbrood met burrata dip",
+      voorgerecht: "Rivierkreeftencocktail in champagne coupe\nMosselen met kruidenboter (individueel, 5 stuks/pers.)\nTe delen: feta salade, bruschetta",
+      hoofdgerecht: "Zeeduivel met gepofte mediterrane tomaatjes en beurre blanc, linguini met Parmezaan apart",
+      dessert: "Affogato - vanille-ijs, espresso tableside, amaretto + amarettikoekjes",
+      wijnen: "",
+      wijnenLijst: [
+        {naam: "Veuve Ambal Crémant de Bourgogne Rosé (aperitief)", prijs: 0, gekocht: true, inBoodschappen: false},
+        {naam: "Whispering Angel rosé (bij voorgerecht)", prijs: 0, gekocht: true, inBoodschappen: false},
+        {naam: "Saint-Véran Maison Joseph Drouhin 2023 (bij zeeduivel)", prijs: 22.95, gekocht: true, inBoodschappen: false}
+      ],
+      voedingLijst: [],
+      opdienstijl: "Rivierkreeftencocktail: kleine vintage champagne coupe\nMosselen: individueel, klein schaaltje (~12cm), 5 stuks/pers.\nLinguini: apart in individueel potje",
+      status: "besteld",
+      evaluatie: "",
+      score: 0
+    }
+  ];
+  persist();
+}
+
+function persist(){
+  if (useFirebase){
+    entries.forEach(e => {
+      db.collection("dineetjes").doc(e.id).set(e).catch(err => console.error(err));
+    });
+  } else {
+    saveLocal();
+  }
+}
+
+function renderStars(score){
+  let s = "";
+  for(let i=1;i<=5;i++){ s += i<=score ? "★" : "☆"; }
+  return s;
+}
+
+/* Totale kosten (wijn + voeding) van één etentje, gebruikt zowel
+   in het overzicht (kaart-kop) als in het bestelformulier. */
+function totalKosten(e){
+  const wijn = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const voeding = (e.voedingLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  return wijn + voeding;
+}
+function formatEuro(n){
+  return "€ " + n.toFixed(2).replace('.', ',');
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const filter = document.getElementById('filterType').value;
+  let shown = entries.filter(e => filter==="alle" || e.type===filter);
+  shown.sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+  if (!shown.length){
+    list.innerHTML = '<div class="empty">Nog geen etentjes hier. Tik op de + om er een toe te voegen.</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(e => {
+    const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long', year:'numeric'}) : '';
+    const kosten = totalKosten(e);
+    const miseCount = (e.miseEnPlaceLijst||[]).reduce((s,g)=> s + g.items.length, 0);
+    const miseDone = (e.miseEnPlaceLijst||[]).reduce((s,g)=> s + g.items.filter(it=>it.done).length, 0);
+    return `
+    <div class="card" data-id="${e.id}">
+      <div class="card-head" onclick="toggleCard('${e.id}')">
+        <div class="titles">
+          <div class="card-title">${escapeHtml(e.name || '(zonder naam)')}</div>
+          <div class="card-meta">
+            <span class="badge">${e.type === 'lunch' ? 'Lunch' : 'Diner'}</span><span class="status-badge">${statusLabel(e.status)}</span>${dateFmt}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="stars">${renderStars(e.score||0)}</div>
+          ${kosten > 0 ? `<div class="card-cost">${formatEuro(kosten)}</div>` : ''}
+          <div class="chevron">▶</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          <div class="status-picker">
+            ${STATUSES.map(s => `<button class="${s.key===e.status?'active':''}" onclick="event.stopPropagation(); setEntryStatus('${e.id}', '${s.key}')">${s.label}</button>`).join('')}
+          </div>
+          <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
+
+          ${COURSE_DEFS.map(def => renderCourseSection(e, def)).join('')}
+
+          ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
+          ${renderWineList(e)}
+          ${renderFoodList(e)}
+          ${renderBijlagenList(e)}
+          ${e.opdienstijl ? `<div class="section-label">Manier van opdienen</div><div class="menu-line">${nl2br(e.opdienstijl)}</div>` : ''}
+          ${shopItemsOf(e).length ? `<div class="card-actions"><button onclick="event.stopPropagation(); switchTab('boodschappen'); openShopFull('${e.id}');">🛒 Boodschappenlijst openen (${shopItemsOf(e).length} items)</button></div>` : ''}
+          ${e.evaluatie ? `<div class="section-label">Evaluatie</div><div class="eval-box">${nl2br(e.evaluatie)}</div>` : ''}
+          ${(e.eval_wijnen || e.eval_eten || e.eval_sfeer) ? `
+          <div class="section-label">Evaluatie</div>
+          ${e.eval_wijnen ? `<div class="eval-box"><strong>🍷 Wijnen:</strong> ${nl2br(e.eval_wijnen)}</div>` : ''}
+          ${e.eval_eten ? `<div class="eval-box" style="margin-top:6px;"><strong>🍽️ Eten:</strong> ${nl2br(e.eval_eten)}</div>` : ''}
+          ${e.eval_sfeer ? `<div class="eval-box" style="margin-top:6px;"><strong>✨ Sfeer:</strong> ${nl2br(e.eval_sfeer)}</div>` : ''}
+          ` : ''}
+
+          <div class="card-actions">
+            ${miseCount ? `<button onclick="event.stopPropagation(); openMiseFull('${e.id}')">🔪 Mise en place (${miseDone}/${miseCount})</button>` : ''}
+            <button onclick="event.stopPropagation(); openBestelForm('${e.id}')">📄 Bestelformulier</button>
+            <button onclick="event.stopPropagation(); openEditor('${e.id}')">Bewerken</button>
+            <button class="danger" onclick="event.stopPropagation(); deleteEntry('${e.id}')">Verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Open-status van kaarten opnieuw toepassen na elke herrender,
+  // ongeacht wat de herrender veroorzaakte (klik, Firestore-sync, ...)
+  openCardIds.forEach(id => {
+    const card = document.querySelector(`.card[data-id="${id}"]`);
+    if (card) card.classList.add('open');
+  });
+}
+
+function toggleCard(id){
+  const card = document.querySelector(`.card[data-id="${id}"]`);
+  if (!card) return;
+  const willOpen = !card.classList.contains('open');
+  card.classList.toggle('open');
+  if (willOpen) openCardIds.add(id); else openCardIds.delete(id);
+}
+
+/* ============================================================
+   MISE EN PLACE
+   Wanneer je een gerecht uit de bibliotheek aan een etentje
+   toevoegt en dat gerecht heeft voorbereidingsstappen, worden
+   die stappen automatisch gekopieerd naar een aftikbare lijst
+   bij dit etentje - gegroepeerd per gerecht. Zo heb je op de dag
+   zelf één scherm met alles wat je vooraf kan doen, zonder na
+   te denken over welk recept erbij hoort.
+   ============================================================ */
+let activeMiseEntryId = null;
+
+function openMiseFull(entryId){
+  activeMiseEntryId = entryId;
+  document.getElementById('viewOverzicht').style.display = 'none';
+  document.getElementById('viewBoodschappen').style.display = 'none';
+  document.getElementById('miseScreen').style.display = 'block';
+  document.querySelector('.tabs').style.display = 'none';
+  renderMiseFull();
+}
+function closeMiseFull(){
+  activeMiseEntryId = null;
+  document.getElementById('miseScreen').style.display = 'none';
+  document.querySelector('.tabs').style.display = 'flex';
+  switchTab('overzicht');
+}
+function renderMiseFull(){
+  const e = entries.find(x=>x.id===activeMiseEntryId);
+  if (!e){ closeMiseFull(); return; }
+  document.getElementById('miseFullTitle').textContent = (e.name || '(zonder naam)') + ' — mise en place';
+  const groups = e.miseEnPlaceLijst || [];
+  let total = 0, done = 0;
+  groups.forEach(g => g.items.forEach(it => { total++; if (it.done) done++; }));
+  const pct = total ? (done/total)*100 : 0;
+  document.getElementById('miseProgressBar').style.width = pct + '%';
+
+  document.getElementById('miseFullList').innerHTML = groups.length ? groups.map((g, gi) => `
+    <div class="section-label" style="padding:0 16px; margin-top:16px;">${escapeHtml(g.naam)}</div>
+    <ul class="shop-list big" style="padding:8px 16px 4px;">
+      ${g.items.map((it, ii) => `
+      <li class="shop-item ${it.done ? 'checked' : ''}" onclick="toggleMiseItem('${e.id}', ${gi}, ${ii})">
+        <span class="shop-box">${it.done ? '✓' : ''}</span>
+        <span class="txt">${escapeHtml(it.tekst)}</span>
+      </li>`).join('')}
+    </ul>
+  `).join('') : '<div class="empty">Nog geen mise en place voor dit etentje. Voeg voorbereidingsstappen toe bij een gerecht in de Gerechten-tab, en kies dat gerecht daarna bij dit menu.</div>';
+}
+function toggleMiseItem(entryId, groupIndex, itemIndex){
+  const e = entries.find(x=>x.id===entryId);
+  if (!e || !e.miseEnPlaceLijst || !e.miseEnPlaceLijst[groupIndex]) return;
+  const item = e.miseEnPlaceLijst[groupIndex].items[itemIndex];
+  if (!item) return;
+  item.done = !item.done;
+  persistOne(e);
+  renderMiseFull();
+}
+
+/* ============================================================
+   BESTELFORMULIER
+   Wordt live opgebouwd uit de actuele gegevens van het etentje
+   (wijnen, voeding, boodschappen) - dus altijd up-to-date,
+   in tegenstelling tot een apart, statisch document.
+   ============================================================ */
+let activeBestelEntryId = null;
+
+function openBestelForm(entryId){
+  activeBestelEntryId = entryId;
+  document.getElementById('viewOverzicht').style.display = 'none';
+  document.getElementById('viewBoodschappen').style.display = 'none';
+  document.getElementById('bestelScreen').style.display = 'block';
+  document.querySelector('.tabs').style.display = 'none';
+  renderBestelForm();
+}
+
+function closeBestelForm(){
+  activeBestelEntryId = null;
+  document.getElementById('bestelScreen').style.display = 'none';
+  document.querySelector('.tabs').style.display = 'flex';
+  const activeTab = document.getElementById('tabBoodschappen').classList.contains('active') ? 'boodschappen' : 'overzicht';
+  switchTab(activeTab);
+}
+
+function renderBestelForm(){
+  const e = entries.find(x=>x.id===activeBestelEntryId);
+  if (!e) { closeBestelForm(); return; }
+
+  const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'geen datum';
+
+  const wines = e.wijnenLijst || [];
+  const wineRows = wines.map(w => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs
+      ? (aantal>1 ? `${aantal}× € ${Number(w.prijs).toFixed(2).replace('.',',')} = € ${lijnTotaal.toFixed(2).replace('.',',')}` : `€ ${Number(w.prijs).toFixed(2).replace('.',',')}`)
+      : (aantal>1 ? `${aantal}× in huis` : 'in huis');
+    return `<div class="bestel-row ${w.gekocht?'done':''}"><span>🍷 ${escapeHtml(w.naam)}${w.gekocht?' (aangekocht)':''}</span><span>${priceLabel}</span></div>`;
+  }).join('');
+  const wineTotal = wines.reduce((s,w)=> s + (Number(w.prijs)||0)*(Number(w.aantal)||1), 0);
+
+  const foodItems = e.voedingLijst || [];
+  const foodRows = foodItems.map(w => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs ? `€ ${lijnTotaal.toFixed(2).replace('.',',')}` : '—';
+    return `<div class="bestel-row"><span>🥕 ${escapeHtml(w.naam)}</span><span>${priceLabel}</span></div>`;
+  }).join('');
+  const foodTotal = foodItems.reduce((s,w)=> s + (Number(w.prijs)||0)*(Number(w.aantal)||1), 0);
+
+  const openBoodschappen = itemsOf(e).filter(item => !(e.boodschappenChecked && e.boodschappenChecked[item]));
+  const boodschapRows = openBoodschappen.map(item => `<div class="bestel-row"><span>☐ ${escapeHtml(item)}</span></div>`).join('');
+
+  const openWines = wines.filter(w => w.inBoodschappen && !w.gekocht);
+  const openWineRows = openWines.map(w => `<div class="bestel-row"><span>☐ 🍷 ${escapeHtml(w.naam)}${w.aantal>1?` (${w.aantal}×)`:''}</span></div>`).join('');
+
+  document.getElementById('bestelSheet').innerHTML = `
+    <h2>${escapeHtml(e.name||'(zonder naam)')}</h2>
+    <div class="bestel-meta">${e.type==='lunch'?'Lunch':'Diner'} — ${dateFmt}${e.guests ? ' — ' + escapeHtml(e.guests) : ''}</div>
+
+    <div class="bestel-section">
+      <h3>Nog te kopen</h3>
+      ${(boodschapRows || openWineRows) ? boodschapRows + openWineRows : '<div class="bestel-empty">Niets meer, alles is al aangekocht ✓</div>'}
+    </div>
+
+    <div class="bestel-section">
+      <h3>Wijnen</h3>
+      ${wineRows || '<div class="bestel-empty">Nog geen wijnen toegevoegd</div>'}
+      ${wines.length ? `<div class="bestel-total"><span>Totaal wijnen</span><span>€ ${wineTotal.toFixed(2).replace('.',',')}</span></div>` : ''}
+    </div>
+
+    <div class="bestel-section">
+      <h3>Voeding</h3>
+      ${foodRows || '<div class="bestel-empty">Nog geen voedingskosten toegevoegd</div>'}
+      ${foodItems.length ? `<div class="bestel-total"><span>Totaal voeding</span><span>€ ${foodTotal.toFixed(2).replace('.',',')}</span></div>` : ''}
+    </div>
+
+    ${(wines.length || foodItems.length) ? `<div class="bestel-total" style="font-size:1.15em;">
+      <span>Totaal etentje</span><span>€ ${(wineTotal+foodTotal).toFixed(2).replace('.',',')}</span>
+    </div>` : ''}
+  `;
+}
+
+/* Herrendert de lijst maar houdt de kaart open en de scrollpositie
+   exact waar die was, zodat je niet "terugspringt" naar boven
+   telkens je iets toevoegt/aanpast binnen een open kaart. */
+function reRenderKeepOpen(entryId){
+  const scrollPos = window.scrollY;
+  openCardIds.add(entryId);
+  render();
+  window.scrollTo(0, scrollPos);
+}
+
+function persistOne(entry){
+  if (useFirebase){
+    db.collection("dineetjes").doc(entry.id).set(entry).catch(err=>console.error(err));
+  } else {
+    saveLocal();
+  }
+}
+
+function setEntryStatus(entryId, statusKey){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  entry.status = statusKey;
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function escapeHtml(str){
+  return (str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function nl2br(str){
+  return escapeHtml(str).replace(/\n/g, '<br>');
+}
+
+document.getElementById('filterType').addEventListener('change', render);
+
+/* Tabs */
+function switchTab(tab){
+  document.getElementById('tabOverzicht').classList.toggle('active', tab==='overzicht');
+  document.getElementById('tabBoodschappen').classList.toggle('active', tab==='boodschappen');
+  document.getElementById('tabGerechten').classList.toggle('active', tab==='gerechten');
+  document.getElementById('tabWijnenBib').classList.toggle('active', tab==='wijnenbib');
+  document.getElementById('viewOverzicht').style.display = tab==='overzicht' ? 'block' : 'none';
+  document.getElementById('viewBoodschappen').style.display = tab==='boodschappen' ? 'block' : 'none';
+  document.getElementById('viewGerechten').style.display = tab==='gerechten' ? 'block' : 'none';
+  document.getElementById('viewWijnenBib').style.display = tab==='wijnenbib' ? 'block' : 'none';
+  if (tab==='boodschappen'){ renderShopPicker(); }
+  if (tab==='gerechten'){ renderGerechtenList(); }
+  if (tab==='wijnenbib'){ renderWijnenBibList(); }
+}
+
+function itemsOf(e){
+  return (e.boodschappen || "").split('\n').map(s=>s.trim()).filter(Boolean);
+}
+
+/* Toont in de boodschappenlijst enkel de wijnen die je daar zelf
+   hebt toegevoegd via het 🛒-icoontje bij die wijn. */
+function shopItemsOf(e){
+  const food = itemsOf(e).map(item => ({label: item, kind:'food'}));
+  const wines = (e.wijnenLijst || [])
+    .map((w, idx) => ({w, idx}))
+    .filter(x => x.w.inBoodschappen)
+    .map(x => ({label: '🍷 ' + x.w.naam, kind:'wine', wineIndex: x.idx}));
+  return [...food, ...wines];
+}
+function shopItemDone(e, item){
+  if (item.kind === 'wine'){
+    return !!(e.wijnenLijst && e.wijnenLijst[item.wineIndex] && e.wijnenLijst[item.wineIndex].gekocht);
+  }
+  return !!(e.boodschappenChecked && e.boodschappenChecked[item.label]);
+}
+function shopItemToggle(e, item){
+  if (item.kind === 'wine'){
+    toggleWineGekocht(e.id, item.wineIndex);
+  } else {
+    toggleShopItemFull(item.label);
+  }
+}
+
+/* ============================================================
+   MENUGANGEN — weergave en beheer per item
+   ============================================================ */
+function renderCourseSection(e, def){
+  const items = getCourseItems(e, def);
+  const rows = items.map((txt,i) => `
+    <div class="wine-row">
+      <span class="wr-name">${escapeHtml(txt)}</span>
+      <select onclick="event.stopPropagation();" onchange="event.stopPropagation(); moveCourseItem('${e.id}', '${def.key}', ${i}, this.value); this.value='';" style="font-family:-apple-system,sans-serif; font-size:0.75em; padding:4px 6px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--ink);">
+        <option value="">verplaats…</option>
+        ${COURSE_DEFS.filter(d=>d.key!==def.key).map(d=>`<option value="${d.key}">${d.label}</option>`).join('')}
+      </select>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteCourseItem('${e.id}', '${def.key}', ${i})">verwijder</span>
+    </div>`).join('');
+  return `
+    <div class="section-label">${def.label}</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog niets toegevoegd</div>'}
+      <div class="card-actions" style="margin-top:8px;">
+        <button onclick="event.stopPropagation(); toggleCoursePicker('${e.id}', '${def.key}')">📖 Gerecht kiezen of toevoegen</button>
+      </div>
+      <div class="gerecht-picker" id="cpicker_${def.key}_${e.id}">
+        ${renderCoursePickerOptions(e.id, def.key)}
+      </div>
+    </div>`;
+}
+
+function moveCourseItem(entryId, fromKey, index, toKey){
+  if (!toKey) return;
+  const entry = entries.find(x=>x.id===entryId);
+  const fromDef = COURSE_DEFS.find(d=>d.key===fromKey);
+  const toDef = COURSE_DEFS.find(d=>d.key===toKey);
+  if (!entry || !fromDef || !toDef) return;
+  const fromItems = getCourseItems(entry, fromDef);
+  const txt = fromItems[index];
+  if (txt === undefined) return;
+  fromItems.splice(index, 1);
+  const toItems = getCourseItems(entry, toDef);
+  toItems.push(txt);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function toggleCoursePicker(entryId, key){
+  const el = document.getElementById('cpicker_'+key+'_'+entryId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderCoursePickerOptions(entryId, key){
+  const matches = gerechten.filter(g => g.categorie === key).sort((a,b)=> a.naam.localeCompare(b.naam));
+  const existingBtns = matches.length
+    ? matches.map(g => `<button onclick="event.stopPropagation(); applyGerechtToEntry('${entryId}', '${g.id}')">${escapeHtml(g.naam)}</button>`).join('')
+    : `<div class="bestel-empty" style="padding:4px 2px;">Nog geen gerechten in deze categorie</div>`;
+  return `
+    ${existingBtns}
+    <div style="margin-top:8px; padding-top:8px; border-top:1px dotted var(--border);">
+      <div style="font-size:0.78em; color:var(--muted); font-family:-apple-system,sans-serif; margin-bottom:6px;">Nieuw gerecht in deze categorie — ingrediënten zijn verplicht, voorbereiding/bereiding en foto voeg je later toe via de Gerechten-tab:</div>
+      <input type="text" class="wa-name" id="cg_naam_${key}_${entryId}" placeholder="Naam gerecht" style="width:100%; margin-bottom:6px;">
+      <textarea id="cg_ing_${key}_${entryId}" placeholder="Ingrediënten, één per lijn" style="width:100%; min-height:60px; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink); margin-bottom:6px;"></textarea>
+      <button onclick="event.stopPropagation(); saveAndApplyGerecht('${entryId}', '${key}')" style="width:100%; font-family:-apple-system,sans-serif; font-size:0.85em; background:var(--wine); color:#f6ead9; border:none; padding:9px; border-radius:8px;">+ Bewaren in bibliotheek &amp; toevoegen</button>
+    </div>`;
+}
+
+function saveAndApplyGerecht(entryId, key){
+  const naamInp = document.getElementById('cg_naam_'+key+'_'+entryId);
+  const ingInp = document.getElementById('cg_ing_'+key+'_'+entryId);
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const ingredienten = ingInp.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ingredienten.length){
+    alert('Voeg minstens één ingrediënt toe — anders klopt je boodschappenlijst straks niet.');
+    return;
+  }
+  const g = {id: 'g_' + Date.now(), naam, categorie: key, ingredienten, voorbereiding: [], bereiding: '', foto: ''};
+  gerechten.push(g);
+  persistGerecht(g);
+  applyGerechtToEntry(entryId, g.id);
+}
+
+function deleteCourseItem(entryId, key, index){
+  const entry = entries.find(x=>x.id===entryId);
+  const def = COURSE_DEFS.find(d=>d.key===key);
+  if (!entry || !def) return;
+  const items = getCourseItems(entry, def);
+  items.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function renderWineList(e){
+  const wines = e.wijnenLijst || [];
+  const total = wines.reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const rows = wines.map((w,i) => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs
+      ? (aantal > 1 ? `${aantal}× € ${Number(w.prijs).toFixed(2).replace('.',',')} = € ${lijnTotaal.toFixed(2).replace('.',',')}` : `€ ${Number(w.prijs).toFixed(2).replace('.',',')}`)
+      : (aantal > 1 ? `${aantal}× in huis` : 'in huis');
+    return `
+    <div class="wine-row">
+      <span class="wr-box ${w.gekocht?'checked':''}" onclick="event.stopPropagation(); toggleWineGekocht('${e.id}', ${i})">${w.gekocht?'✓':''}</span>
+      <span class="wr-name ${w.gekocht?'wr-done':''}">🍷 ${escapeHtml(w.naam)}</span>
+      <span class="wr-price">${priceLabel}</span>
+      <span class="wr-cart ${w.inBoodschappen?'active':''}" onclick="event.stopPropagation(); toggleWineInBoodschappen('${e.id}', ${i})" title="In boodschappenlijst">🛒</span>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteWine('${e.id}', ${i})">verwijder</span>
+    </div>`;
+  }).join('');
+  const totalRow = wines.length ? `<div class="wine-total"><span>Totaal</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
+  return `
+    <div class="section-label">Wijnen</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen wijnen toegevoegd</div>'}
+      ${totalRow}
+      <div class="card-actions" style="margin-top:8px;">
+        <button onclick="event.stopPropagation(); toggleWijnBibPicker('${e.id}')">🍷 Wijn kiezen of toevoegen</button>
+      </div>
+      <div class="gerecht-picker" id="wbpicker_${e.id}">
+        ${renderWijnBibPickerOptions(e.id)}
+      </div>
+    </div>`;
+}
+
+function addWine(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('wa_name_'+entryId);
+  const priceInp = document.getElementById('wa_price_'+entryId);
+  const qtyInp = document.getElementById('wa_qty_'+entryId);
+  const naam = nameInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = priceInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  const aantalRaw = parseInt(qtyInp.value.trim());
+  const aantal = (aantalRaw && aantalRaw > 0) ? aantalRaw : 1;
+  entry.wijnenLijst = entry.wijnenLijst || [];
+  entry.wijnenLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs, aantal, gekocht: false, inBoodschappen: true});
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function toggleWineGekocht(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.wijnenLijst || !entry.wijnenLijst[index]) return;
+  entry.wijnenLijst[index].gekocht = !entry.wijnenLijst[index].gekocht;
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function toggleWineInBoodschappen(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.wijnenLijst || !entry.wijnenLijst[index]) return;
+  entry.wijnenLijst[index].inBoodschappen = !entry.wijnenLijst[index].inBoodschappen;
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function deleteWine(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.wijnenLijst) return;
+  entry.wijnenLijst.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function renderFoodList(e){
+  const items = e.voedingLijst || [];
+  const total = items.reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const rows = items.map((w,i) => {
+    const aantal = Number(w.aantal)||1;
+    const lijnTotaal = (Number(w.prijs)||0) * aantal;
+    const priceLabel = w.prijs
+      ? (aantal > 1 ? `${aantal}× € ${Number(w.prijs).toFixed(2).replace('.',',')} = € ${lijnTotaal.toFixed(2).replace('.',',')}` : `€ ${Number(w.prijs).toFixed(2).replace('.',',')}`)
+      : '—';
+    return `
+    <div class="wine-row">
+      <span class="wr-name">🥕 ${escapeHtml(w.naam)}</span>
+      <span class="wr-price">${priceLabel}</span>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteFood('${e.id}', ${i})">verwijder</span>
+    </div>`;
+  }).join('');
+  const wineTotal = (e.wijnenLijst||[]).reduce((s,w)=> s + (Number(w.prijs)||0) * (Number(w.aantal)||1), 0);
+  const totalRow = items.length ? `<div class="wine-total"><span>Totaal voeding</span><span>€ ${total.toFixed(2).replace('.',',')}</span></div>` : '';
+  const grandTotal = (items.length || (e.wijnenLijst||[]).length) ? `<div class="wine-total" style="border-top:1px solid var(--border); padding-top:8px; margin-top:4px;"><span>Totaal etentje (eten + wijn)</span><span>€ ${(total+wineTotal).toFixed(2).replace('.',',')}</span></div>` : '';
+  return `
+    <div class="section-label">Voeding</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen voedingskosten toegevoegd</div>'}
+      ${totalRow}
+      ${grandTotal}
+      <div class="wine-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="wa-name" id="fa_name_${e.id}" placeholder="Ingrediënt / post (bv. kassabon Delhaize)">
+        <input type="text" class="wa-price" id="fa_price_${e.id}" placeholder="€">
+        <button onclick="addFood('${e.id}')">+</button>
+      </div>
+    </div>`;
+}
+
+function addFood(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('fa_name_'+entryId);
+  const priceInp = document.getElementById('fa_price_'+entryId);
+  const naam = nameInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = priceInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  entry.voedingLijst = entry.voedingLijst || [];
+  entry.voedingLijst.push({naam, prijs: isNaN(prijs) ? 0 : prijs});
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function deleteFood(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.voedingLijst) return;
+  entry.voedingLijst.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+/* ============================================================
+   BIJLAGEN (bonnetjes / foto's)
+   Twee manieren om een bijlage te koppelen: rechtstreeks een
+   foto kiezen (wordt gecomprimeerd en naar Firebase Storage
+   geüpload), of desgewenst nog altijd een link plakken.
+   ============================================================ */
+function renderBijlagenList(e){
+  const bijlagen = e.bijlagen || [];
+  const rows = bijlagen.map((b,i) => `
+    <div class="bijlage-row">
+      <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener">${escapeHtml(b.naam || b.url)}</a>
+      <span class="wr-del" onclick="event.stopPropagation(); deleteBijlage('${e.id}', ${i})">verwijder</span>
+    </div>`).join('');
+  return `
+    <div class="section-label">Bonnetjes / bijlagen</div>
+    <div class="wine-list">
+      ${rows || '<div class="menu-line" style="color:var(--muted); font-style:italic;">Nog geen bonnetjes of foto\'s gekoppeld</div>'}
+      <div class="bijlage-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="ba-name" id="ba_name_${e.id}" placeholder="Naam (bv. bon Delhaize)">
+        <label class="bijlage-filebtn">📷 Kies bestand<input type="file" accept="image/*,application/pdf" id="ba_file_${e.id}" style="display:none;" onchange="handleBijlageFile('${e.id}')"></label>
+      </div>
+      <div class="bijlage-add-row" onclick="event.stopPropagation();">
+        <input type="text" class="ba-url" id="ba_url_${e.id}" placeholder="Of plak een link (Google Drive...)">
+        <button onclick="addBijlage('${e.id}')">+</button>
+      </div>
+      <div class="bijlage-hint" id="ba_status_${e.id}">Kies een foto (wordt automatisch gecomprimeerd), of plak zelf een link.</div>
+    </div>`;
+}
+
+async function handleBijlageFile(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const fileInp = document.getElementById('ba_file_'+entryId);
+  const nameInp = document.getElementById('ba_name_'+entryId);
+  const statusEl = document.getElementById('ba_status_'+entryId);
+  const file = fileInp.files && fileInp.files[0];
+  if (!file) return;
+  const naam = nameInp.value.trim() || file.name;
+  if (statusEl) statusEl.textContent = '⏳ Bezig met uploaden...';
+  try{
+    const url = await uploadBijlageFoto(file, 'dineetjes_'+entryId);
+    entry.bijlagen = entry.bijlagen || [];
+    entry.bijlagen.push({naam, url});
+    persistOne(entry);
+    nameInp.value = '';
+    fileInp.value = '';
+    reRenderKeepOpen(entryId);
+  }catch(err){
+    console.error(err);
+    if (statusEl) statusEl.textContent = '⚠️ Uploaden mislukt, probeer opnieuw.';
+  }
+}
+
+function addBijlage(entryId){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry) return;
+  const nameInp = document.getElementById('ba_name_'+entryId);
+  const urlInp = document.getElementById('ba_url_'+entryId);
+  const naam = nameInp.value.trim();
+  const url = urlInp.value.trim();
+  if (!url) return;
+  entry.bijlagen = entry.bijlagen || [];
+  entry.bijlagen.push({naam, url});
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function deleteBijlage(entryId, index){
+  const entry = entries.find(x=>x.id===entryId);
+  if (!entry || !entry.bijlagen) return;
+  entry.bijlagen.splice(index, 1);
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+/* ============================================================
+   GERECHTENBIBLIOTHEEK
+   Sla een gerecht met zijn ingrediënten één keer op, en roep het
+   daarna telkens opnieuw op vanuit een etentje - de naam komt bij
+   de juiste gang terecht, de ingrediënten belanden automatisch
+   in de boodschappenlijst, en de voorbereidingsstappen belanden
+   automatisch in de mise en place van dat etentje.
+
+   Voorbereiding, bereidingswijze en foto zijn ALTIJD optioneel:
+   een gerecht met enkel naam + ingrediënten is een volwaardig,
+   bruikbaar gerecht. Voorbereidingsstappen worden aftikbare taken
+   op de dag zelf; bereidingswijze blijft gewoon leesbare tekst.
+   ============================================================ */
+const GERECHT_CATLABEL = {aperitief:'Aperitief', sharing:'Sharing bij aperitief', amuses:'Amuses', voorgerecht:'Voorgerecht', hoofdgerecht:'Hoofdgerecht', dessert:'Dessert'};
+
+function loadGerechtenLocal(){
+  try{ const raw = localStorage.getItem(GERECHTEN_LOCAL_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function saveGerechtenLocal(){ localStorage.setItem(GERECHTEN_LOCAL_KEY, JSON.stringify(gerechten)); }
+
+function persistGerecht(g){
+  if (useFirebase){
+    db.collection("gerechten").doc(g.id).set(g).catch(err=>console.error(err));
+  } else {
+    saveGerechtenLocal();
+  }
+}
+
+function seedGerechtenIfEmpty(){
+  if (gerechten.length) return;
+  gerechten = [
+    {id:"g-tomatentartaar-stracciatella", naam:"Tomatentartaar met stracciatella", categorie:"voorgerecht",
+      ingredienten:["Purperen tomaatjes","Stracciatella","Pijnboompitten","Verse basilicum (voor basilicumolie)","Neutrale olie (druivenpitolie)"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-garnalencocktail", naam:"Garnalencocktail", categorie:"voorgerecht",
+      ingredienten:["Grijze garnalen","IJsbergsla","Mayonaise","Ketchup","Cognac","Citroen"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-tartaar-zalm", naam:"Tartaar van zalm", categorie:"voorgerecht",
+      ingredienten:["Verse zalmfilet (sushi-kwaliteit)","Zure room","Rode ui","Kappertjes","Bieslook of dille"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-mosselen-kruidenboter", naam:"Mosselen in kruidenboter", categorie:"voorgerecht",
+      ingredienten:["Verse mosselen","Boter","Look (knoflook)","Verse peterselie"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-scampi-groenten", naam:"Scampi met groenten", categorie:"voorgerecht",
+      ingredienten:["Scampi","Groenten (courgette, paprika, cherrytomaatjes)"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-osso-buco", naam:"Osso buco met pasta", categorie:"hoofdgerecht",
+      ingredienten:["Kalfsschenkel","Ui","Wortel","Bleekselder","Tomatenblokjes of -puree","Witte wijn","Kalfs- of runderbouillon","Verse pasta (tagliatelle of pappardelle)","Parmezaankaas","Citroen (voor gremolata)"], voorbereiding:[], bereiding:"", foto:""},
+    {id:"g-aardbeien-vanille-choco", naam:"Aardbeien met vanille- en chocoladesaus", categorie:"dessert",
+      ingredienten:["Verse aardbeien","Vanillesaus","Chocoladesaus"], voorbereiding:[], bereiding:"", foto:""}
+  ];
+  gerechten.forEach(g => persistGerecht(g));
+}
+
+function renderGerechtenList(){
+  const list = document.getElementById('gerechtenList');
+  if (!gerechten.length){
+    list.innerHTML = '<div class="empty">Nog geen gerechten bewaard. Vul hierboven een naam en ingrediënten in.</div>';
+    return;
+  }
+  const sorted = [...gerechten].sort((a,b)=> a.naam.localeCompare(b.naam));
+  list.innerHTML = sorted.map(g => {
+    const voorbereiding = g.voorbereiding || [];
+    const heeftRecept = (g.bereiding && g.bereiding.trim()) || g.foto || voorbereiding.length;
+    const stappen = (g.bereiding||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    const isEditing = editGerechtIds.has(g.id);
+    return `
+    <div class="gerecht-card" data-gid="${g.id}">
+      <div class="gerecht-head" onclick="toggleGerechtCard('${g.id}')">
+        <div>
+          <div class="gc-name">${escapeHtml(g.naam)}</div>
+          <div class="gc-cat">${GERECHT_CATLABEL[g.categorie]||g.categorie}${heeftRecept ? ' · 📖 recept' : ''}${voorbereiding.length ? ' · 🔪 mise en place' : ''}</div>
+        </div>
+        <div class="chevron">▶</div>
+      </div>
+      <div class="gerecht-body">
+        <div class="gerecht-body-inner">
+          ${(g.ingredienten||[]).map(i => `<div class="gerecht-ing">• ${escapeHtml(i)}</div>`).join('') || '<div class="bestel-empty">Geen ingrediënten genoteerd</div>'}
+
+          ${g.foto ? `<img class="gerecht-foto" src="${escapeHtml(g.foto)}" alt="${escapeHtml(g.naam)}">` : ''}
+
+          ${voorbereiding.length ? `
+          <div class="section-label" style="margin-top:12px;">🔪 Voorbereiding / mise en place</div>
+          ${voorbereiding.map((s,i) => `<div class="gerecht-ing">${i+1}. ${escapeHtml(s)}</div>`).join('')}
+          ` : ''}
+
+          ${stappen.length ? `
+          <div class="section-label" style="margin-top:12px;">Bereiding op het moment zelf</div>
+          ${stappen.map((s,i) => `<div class="gerecht-ing">${i+1}. ${escapeHtml(s)}</div>`).join('')}
+          ` : ''}
+
+          <div style="font-family:-apple-system,sans-serif; font-size:0.85em; margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <label style="color:var(--muted);">Categorie:</label>
+            <select onclick="event.stopPropagation();" onchange="event.stopPropagation(); moveGerechtCategorie('${g.id}', this.value)" style="font-family:-apple-system,sans-serif; font-size:0.85em; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--ink);">
+              ${Object.keys(GERECHT_CATLABEL).map(k => `<option value="${k}" ${k===g.categorie?'selected':''}>${GERECHT_CATLABEL[k]}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="gerecht-actions">
+            <button onclick="event.stopPropagation(); toggleGerechtEdit('${g.id}')">✏️ ${heeftRecept ? 'Recept bewerken' : 'Recept toevoegen'}</button>
+            <button class="danger" onclick="event.stopPropagation(); deleteGerecht('${g.id}')">Verwijderen</button>
+          </div>
+
+          <div class="gerecht-edit" id="gedit_${g.id}" style="display:${isEditing ? 'block' : 'none'};" onclick="event.stopPropagation();">
+            <div class="field">
+              <label>Voorbereiding / mise en place (optioneel, één stap per lijn — dit worden aftikbare taken)</label>
+              <textarea id="ge_voorbereiding_${g.id}" placeholder="Laat leeg als er niets vooraf te doen is">${escapeHtml(voorbereiding.join('\n'))}</textarea>
+            </div>
+            <div class="field">
+              <label>Bereiding op het moment zelf (optioneel, één stap per lijn)</label>
+              <textarea id="ge_bereiding_${g.id}" placeholder="Laat leeg om enkel de ingrediënten te bewaren">${escapeHtml(g.bereiding||'')}</textarea>
+            </div>
+            <div class="field">
+              <label>Foto van resultaat (optioneel)</label>
+              <label class="bijlage-filebtn" style="display:inline-flex;">📷 Kies foto<input type="file" accept="image/*" id="ge_foto_file_${g.id}" style="display:none;" onchange="handleGerechtEditFotoPreview('${g.id}')"></label>
+              <div id="ge_foto_status_${g.id}" style="font-family:-apple-system,sans-serif; font-size:0.78em; color:var(--muted); margin-top:6px;">${g.foto ? 'Er hangt al een foto bij dit recept — kies een nieuwe om te vervangen.' : 'Nog geen foto gekozen.'}</div>
+            </div>
+            <button onclick="event.stopPropagation(); saveGerechtEdit('${g.id}')" style="width:100%; font-family:-apple-system,sans-serif; font-size:0.9em; background:var(--wine); color:#f6ead9; border:none; padding:10px; border-radius:8px;">Recept bewaren</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  openGerechtIds.forEach(id => {
+    const card = document.querySelector(`.gerecht-card[data-gid="${id}"]`);
+    if (card) card.classList.add('open');
+  });
+}
+
+function toggleGerechtCard(id){
+  const card = document.querySelector(`.gerecht-card[data-gid="${id}"]`);
+  if (!card) return;
+  const willOpen = !card.classList.contains('open');
+  card.classList.toggle('open');
+  if (willOpen) openGerechtIds.add(id); else openGerechtIds.delete(id);
+}
+
+function moveGerechtCategorie(id, newCat){
+  const g = gerechten.find(x=>x.id===id);
+  if (!g || g.categorie === newCat) return;
+  g.categorie = newCat;
+  persistGerecht(g);
+  openGerechtIds.add(id);
+  renderGerechtenList();
+}
+
+/* --- Foto-preview in het "nieuw gerecht"-formulier --- */
+function handleGerechtFotoPreview(){
+  const fileInp = document.getElementById('g_foto_file');
+  const statusEl = document.getElementById('g_foto_preview');
+  const file = fileInp.files && fileInp.files[0];
+  if (!file){ pendingGerechtFoto = null; statusEl.textContent = 'Geen foto gekozen'; return; }
+  pendingGerechtFoto = file;
+  statusEl.textContent = '📷 ' + file.name + ' geselecteerd — wordt geüpload bij bewaren';
+}
+
+async function saveGerecht(){
+  const naamInp = document.getElementById('g_naam');
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const categorie = document.getElementById('g_categorie').value;
+  const ingredienten = document.getElementById('g_ingredienten').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ingredienten.length){
+    alert('Voeg minstens één ingrediënt toe — anders klopt je boodschappenlijst straks niet.');
+    return;
+  }
+  const voorbereiding = document.getElementById('g_voorbereiding').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const bereiding = document.getElementById('g_bereiding').value.trim();
+  const g = {id: 'g_' + Date.now(), naam, categorie, ingredienten, voorbereiding, bereiding, foto: ''};
+
+  if (pendingGerechtFoto){
+    const statusEl = document.getElementById('g_foto_preview');
+    if (statusEl) statusEl.textContent = '⏳ Foto wordt geüpload...';
+    try{
+      g.foto = await uploadBijlageFoto(pendingGerechtFoto, 'gerechten_'+g.id);
+    }catch(err){
+      console.error(err);
+      alert('De foto uploaden is mislukt, het gerecht wordt wel bewaard zonder foto.');
+    }
+  }
+
+  gerechten.push(g);
+  persistGerecht(g);
+  naamInp.value = '';
+  document.getElementById('g_ingredienten').value = '';
+  document.getElementById('g_voorbereiding').value = '';
+  document.getElementById('g_bereiding').value = '';
+  document.getElementById('g_foto_file').value = '';
+  document.getElementById('g_foto_preview').textContent = 'Geen foto gekozen';
+  pendingGerechtFoto = null;
+  renderGerechtenList();
+}
+
+function deleteGerecht(id){
+  if (!confirm('Dit gerecht uit de bibliotheek verwijderen?')) return;
+  gerechten = gerechten.filter(g=>g.id!==id);
+  openGerechtIds.delete(id);
+  editGerechtIds.delete(id);
+  if (useFirebase){
+    db.collection("gerechten").doc(id).delete().catch(err=>console.error(err));
+  } else {
+    saveGerechtenLocal();
+  }
+  renderGerechtenList();
+}
+
+/* --- Recept bewerken (voorbereiding + bereidingswijze + foto) bij een bestaand gerecht --- */
+function toggleGerechtEdit(id){
+  openGerechtIds.add(id);
+  if (editGerechtIds.has(id)) editGerechtIds.delete(id); else editGerechtIds.add(id);
+  renderGerechtenList();
+}
+
+function handleGerechtEditFotoPreview(id){
+  const fileInp = document.getElementById('ge_foto_file_'+id);
+  const statusEl = document.getElementById('ge_foto_status_'+id);
+  const file = fileInp.files && fileInp.files[0];
+  if (!file) return;
+  pendingGerechtEditFoto[id] = file;
+  if (statusEl) statusEl.textContent = '📷 ' + file.name + ' geselecteerd — wordt geüpload bij bewaren';
+}
+
+async function saveGerechtEdit(id){
+  const g = gerechten.find(x=>x.id===id);
+  if (!g) return;
+  const voorbereidingInp = document.getElementById('ge_voorbereiding_'+id);
+  g.voorbereiding = voorbereidingInp ? voorbereidingInp.value.split('\n').map(s=>s.trim()).filter(Boolean) : (g.voorbereiding||[]);
+  const bereidingInp = document.getElementById('ge_bereiding_'+id);
+  g.bereiding = bereidingInp ? bereidingInp.value.trim() : (g.bereiding||'');
+
+  const nieuweFoto = pendingGerechtEditFoto[id];
+  if (nieuweFoto){
+    const statusEl = document.getElementById('ge_foto_status_'+id);
+    if (statusEl) statusEl.textContent = '⏳ Foto wordt geüpload...';
+    try{
+      g.foto = await uploadBijlageFoto(nieuweFoto, 'gerechten_'+id);
+      delete pendingGerechtEditFoto[id];
+    }catch(err){
+      console.error(err);
+      alert('De foto uploaden is mislukt, de rest van het recept wordt wel bewaard.');
+    }
+  }
+
+  persistGerecht(g);
+  openGerechtIds.add(id);
+  editGerechtIds.delete(id);
+  renderGerechtenList();
+}
+
+/* --- Gerecht kiezen vanuit een etentje-kaart --- */
+function toggleGerechtPicker(entryId){
+  const el = document.getElementById('gpicker_'+entryId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderGerechtPickerOptions(entryId){
+  if (!gerechten.length) return '<div class="bestel-empty" style="padding:4px 2px;">Nog geen gerechten in je bibliotheek</div>';
+  const sorted = [...gerechten].sort((a,b)=> a.naam.localeCompare(b.naam));
+  return sorted.map(g => `<button onclick="event.stopPropagation(); applyGerechtToEntry('${entryId}', '${g.id}')">${GERECHT_CATLABEL[g.categorie]||''} — ${escapeHtml(g.naam)}</button>`).join('');
+}
+
+const COURSE_FIELD_BY_CAT = {aperitief:'aperitief', sharing:'sharing', amuses:'amuses', voorgerecht:'voorgerecht', hoofdgerecht:'hoofdgerecht', dessert:'dessert'};
+
+function applyGerechtToEntry(entryId, gerechtId){
+  const entry = entries.find(x=>x.id===entryId);
+  const g = gerechten.find(x=>x.id===gerechtId);
+  if (!entry || !g) return;
+
+  // Naam toevoegen aan de juiste gang (als los item, net als handmatig toegevoegde items)
+  const key = COURSE_FIELD_BY_CAT[g.categorie] || 'voorgerecht';
+  const def = COURSE_DEFS.find(d=>d.key===key);
+  if (def){
+    const items = getCourseItems(entry, def);
+    items.push(g.naam);
+  }
+
+  // Ingrediënten toevoegen aan de boodschappenlijst (zonder exacte duplicaten)
+  const bestaande = itemsOf(entry);
+  const nieuw = (g.ingredienten||[]).filter(i => !bestaande.includes(i));
+  entry.boodschappen = [...bestaande, ...nieuw].join('\n');
+
+  // Voorbereidingsstappen (mise en place) toevoegen als nieuwe, aftikbare groep
+  if (g.voorbereiding && g.voorbereiding.length){
+    entry.miseEnPlaceLijst = entry.miseEnPlaceLijst || [];
+    entry.miseEnPlaceLijst.push({
+      naam: g.naam,
+      items: g.voorbereiding.map(tekst => ({tekst, done:false}))
+    });
+  }
+
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+/* ============================================================
+   WIJNENBIBLIOTHEEK
+   Een eigen "wijnkelder" los van de etentjes: naam, prijs,
+   ervaring/tasting notes en score. Vanuit een etentje kun je een
+   opgeslagen wijn met één tik toevoegen aan dat menu.
+   ============================================================ */
+function loadWijnenBibLocal(){
+  try{ const raw = localStorage.getItem(WIJNENBIB_LOCAL_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function saveWijnenBibLocal(){ localStorage.setItem(WIJNENBIB_LOCAL_KEY, JSON.stringify(wijnenBib)); }
+
+function persistWijnBib(w){
+  if (useFirebase){
+    db.collection("wijnenbib").doc(w.id).set(w).catch(err=>console.error(err));
+  } else {
+    saveWijnenBibLocal();
+  }
+}
+
+function seedWijnenBibIfEmpty(){
+  if (wijnenBib.length) return;
+  wijnenBib = [
+    {id:"wb-saint-veran-drouhin", naam:"Saint-Véran Maison Joseph Drouhin 2023", prijs:22.95, regio:"Chardonnay, Mâconnais/Bourgogne", ervaring:"", score:0},
+    {id:"wb-monte-carbonare", naam:"Soave Classico 'Monte Carbonare' Suavia", prijs:23.00, regio:"Garganega, Veneto (Italië)", ervaring:"", score:0},
+    {id:"wb-whispering-angel", naam:"Whispering Angel", prijs:0, regio:"Rosé, Provence", ervaring:"", score:0},
+    {id:"wb-veuve-ambal", naam:"Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé", prijs:0, regio:"Crémant, Bourgogne", ervaring:"", score:0}
+  ];
+  wijnenBib.forEach(w => persistWijnBib(w));
+}
+
+function renderWijnenBibList(){
+  const list = document.getElementById('wijnenBibList');
+  if (!wijnenBib.length){
+    list.innerHTML = '<div class="empty">Nog geen wijnen bewaard. Vul hierboven een naam in.</div>';
+    return;
+  }
+  const sorted = [...wijnenBib].sort((a,b)=> a.naam.localeCompare(b.naam));
+  list.innerHTML = sorted.map(w => `
+    <div class="gerecht-card" data-wbid="${w.id}">
+      <div class="gerecht-head" onclick="toggleWbCard('${w.id}')">
+        <div>
+          <div class="gc-name">🍷 ${escapeHtml(w.naam)}</div>
+          <div class="gc-cat">${w.prijs ? '€ ' + Number(w.prijs).toFixed(2).replace('.',',') : 'geen prijs'}${w.regio ? ' — ' + escapeHtml(w.regio) : ''}</div>
+        </div>
+        <div class="stars" style="font-size:0.85em;">${renderStars(w.score||0)}</div>
+      </div>
+      <div class="gerecht-body">
+        <div class="gerecht-body-inner">
+          ${w.ervaring ? `<div class="eval-box">${nl2br(w.ervaring)}</div>` : '<div class="bestel-empty">Nog geen ervaring genoteerd</div>'}
+          <div class="gerecht-actions">
+            <button onclick="event.stopPropagation(); editWijnBibErvaring('${w.id}')">Bewerken</button>
+            <button class="danger" onclick="event.stopPropagation(); deleteWijnBib('${w.id}')">Verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleWbCard(id){
+  const card = document.querySelector(`.gerecht-card[data-wbid="${id}"]`);
+  if (card) card.classList.toggle('open');
+}
+
+function saveWijnBib(){
+  const naamInp = document.getElementById('wb_naam');
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = document.getElementById('wb_prijs').value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  const regio = document.getElementById('wb_regio').value.trim();
+  const ervaring = document.getElementById('wb_ervaring').value.trim();
+  const w = {id:'wb_'+Date.now(), naam, prijs: isNaN(prijs)?0:prijs, regio, ervaring, score: wbCurrentStars};
+  wijnenBib.push(w);
+  persistWijnBib(w);
+  naamInp.value = '';
+  document.getElementById('wb_prijs').value = '';
+  document.getElementById('wb_regio').value = '';
+  document.getElementById('wb_ervaring').value = '';
+  wbCurrentStars = 0;
+  updateWbStarPicker();
+  renderWijnenBibList();
+}
+
+function editWijnBibErvaring(id){
+  const w = wijnenBib.find(x=>x.id===id);
+  if (!w) return;
+  const prijsVal = prompt("Prijs per fles (€, leeg = 'in huis'):", w.prijs || '');
+  if (prijsVal === null) return;
+  const prijsParsed = parseFloat(prijsVal.trim().replace(',', '.'));
+  w.prijs = (prijsVal.trim() && !isNaN(prijsParsed)) ? prijsParsed : 0;
+  const val = prompt("Ervaring / tasting notes:", w.ervaring || '');
+  if (val === null) return;
+  w.ervaring = val.trim();
+  const scoreVal = prompt("Score (0-5):", w.score || 0);
+  if (scoreVal !== null && !isNaN(parseInt(scoreVal))){
+    w.score = Math.max(0, Math.min(5, parseInt(scoreVal)));
+  }
+  persistWijnBib(w);
+  renderWijnenBibList();
+}
+
+function deleteWijnBib(id){
+  if (!confirm('Deze wijn uit de bibliotheek verwijderen?')) return;
+  wijnenBib = wijnenBib.filter(w=>w.id!==id);
+  if (useFirebase){
+    db.collection("wijnenbib").doc(id).delete().catch(err=>console.error(err));
+  } else {
+    saveWijnenBibLocal();
+  }
+  renderWijnenBibList();
+}
+
+/* --- Wijn kiezen vanuit een etentje-kaart --- */
+function toggleWijnBibPicker(entryId){
+  const el = document.getElementById('wbpicker_'+entryId);
+  if (el) el.classList.toggle('open');
+}
+
+function renderWijnBibPickerOptions(entryId){
+  const sorted = [...wijnenBib].sort((a,b)=> a.naam.localeCompare(b.naam));
+  const existingBtns = sorted.length
+    ? sorted.map(w => `<button onclick="event.stopPropagation(); applyWijnBibToEntry('${entryId}', '${w.id}')">🍷 ${escapeHtml(w.naam)}${w.prijs?' — € '+Number(w.prijs).toFixed(2).replace('.',','):''}</button>`).join('')
+    : `<div class="bestel-empty" style="padding:4px 2px;">Nog geen wijnen in je wijnkelder</div>`;
+  return `
+    ${existingBtns}
+    <div style="margin-top:8px; padding-top:8px; border-top:1px dotted var(--border);">
+      <div style="font-size:0.78em; color:var(--muted); font-family:-apple-system,sans-serif; margin-bottom:6px;">Nieuwe wijn in de wijnkelder:</div>
+      <input type="text" class="wa-name" id="wbn_naam_${entryId}" placeholder="Naam wijn" style="width:100%; margin-bottom:6px;">
+      <div class="row2" style="margin-bottom:6px;">
+        <input type="text" id="wbn_prijs_${entryId}" placeholder="€ per fles (optioneel)" style="flex:1; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink);">
+        <input type="text" id="wbn_regio_${entryId}" placeholder="Druif/regio (optioneel)" style="flex:1; font-family:-apple-system,sans-serif; font-size:0.88em; padding:8px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--ink);">
+      </div>
+      <button onclick="event.stopPropagation(); saveAndApplyWijnBib('${entryId}')" style="width:100%; font-family:-apple-system,sans-serif; font-size:0.85em; background:var(--wine); color:#f6ead9; border:none; padding:9px; border-radius:8px;">+ Bewaren in wijnkelder &amp; toevoegen</button>
+    </div>`;
+}
+
+function saveAndApplyWijnBib(entryId){
+  const naamInp = document.getElementById('wbn_naam_'+entryId);
+  const prijsInp = document.getElementById('wbn_prijs_'+entryId);
+  const regioInp = document.getElementById('wbn_regio_'+entryId);
+  const naam = naamInp.value.trim();
+  if (!naam) return;
+  const prijsRaw = prijsInp.value.trim().replace(',', '.');
+  const prijs = prijsRaw ? parseFloat(prijsRaw) : 0;
+  const regio = regioInp.value.trim();
+  const w = {id:'wb_'+Date.now(), naam, prijs: isNaN(prijs)?0:prijs, regio, ervaring:'', score:0};
+  wijnenBib.push(w);
+  persistWijnBib(w);
+  applyWijnBibToEntry(entryId, w.id);
+}
+
+function applyWijnBibToEntry(entryId, wbId){
+  const entry = entries.find(x=>x.id===entryId);
+  const w = wijnenBib.find(x=>x.id===wbId);
+  if (!entry || !w) return;
+  entry.wijnenLijst = entry.wijnenLijst || [];
+  entry.wijnenLijst.push({naam: w.naam, prijs: w.prijs||0, aantal:1, gekocht:false, inBoodschappen:true});
+  persistOne(entry);
+  reRenderKeepOpen(entryId);
+}
+
+function renderShopPicker(){
+  document.getElementById('shopFullScreen').style.display = 'none';
+  document.getElementById('shopPickerScreen').style.display = 'block';
+  const pickList = document.getElementById('shopPickList');
+  const withItems = entries.filter(e => shopItemsOf(e).length > 0);
+  if (!withItems.length){
+    pickList.innerHTML = '<div class="empty">Nog geen boodschappenlijstjes. Voeg items toe bij een etentje via "Bewerken".</div>';
+    return;
+  }
+  withItems.sort((a,b)=> new Date(a.date) - new Date(b.date));
+  pickList.innerHTML = withItems.map(e => {
+    const items = shopItemsOf(e);
+    const doneCount = items.filter(item => shopItemDone(e, item)).length;
+    const dateFmt = e.date ? new Date(e.date).toLocaleDateString('nl-BE', {day:'numeric', month:'long'}) : '';
+    return `<div class="shop-pick-card" onclick="openShopFull('${e.id}')">
+      <div>
+        <div class="sp-name">${escapeHtml(e.name||'(zonder naam)')}</div>
+        <div class="sp-meta">${dateFmt}</div>
+      </div>
+      <div class="sp-count">${doneCount}/${items.length}</div>
+    </div>`;
+  }).join('');
+}
+
+let activeShopEntryId = null;
+
+function openShopFull(entryId){
+  activeShopEntryId = entryId;
+  document.getElementById('shopPickerScreen').style.display = 'none';
+  document.getElementById('shopFullScreen').style.display = 'block';
+  renderShopFull();
+}
+function closeShopFull(){
+  activeShopEntryId = null;
+  renderShopPicker();
+}
+
+function renderShopFull(){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) { closeShopFull(); return; }
+  document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
+  const items = shopItemsOf(e);
+  const doneCount = items.filter(item => shopItemDone(e, item)).length;
+  const pct = items.length ? (doneCount/items.length)*100 : 0;
+  document.getElementById('shopProgressBar').style.width = pct + '%';
+
+  document.getElementById('shopFullList').innerHTML = items.map((item) => {
+    const isDone = shopItemDone(e, item);
+    const safeLabel = item.label.replace(/'/g, "\\'");
+    const toggleCall = item.kind === 'wine'
+      ? `toggleWineGekocht('${e.id}', ${item.wineIndex})`
+      : `toggleShopItemFull('${safeLabel}')`;
+    const delBtn = item.kind === 'food'
+      ? `<span class="shop-del" onclick="deleteShopItem('${safeLabel}')">verwijder</span>`
+      : `<span class="shop-del" onclick="toggleWineInBoodschappen('${e.id}', ${item.wineIndex}); renderShopFull();">verwijder</span>`;
+    return `<li class="shop-item ${isDone?'checked':''}">
+      <span class="shop-left" onclick="${toggleCall}; renderShopFull();">
+        <span class="shop-box">${isDone?'✓':''}</span>
+        <span class="txt">${escapeHtml(item.label)}</span>
+      </span>
+      ${delBtn}
+    </li>`;
+  }).join('') || '<div class="empty">Nog geen items. Voeg er hieronder een toe.</div>';
+}
+
+function toggleShopItemFull(itemText){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  e.boodschappenChecked = e.boodschappenChecked || {};
+  e.boodschappenChecked[itemText] = !e.boodschappenChecked[itemText];
+  persistOne(e);
+  renderShopFull();
+}
+
+function addShopItem(){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  const inp = document.getElementById('newShopItem');
+  const val = inp.value.trim();
+  if (!val) return;
+  const items = itemsOf(e);
+  items.push(val);
+  e.boodschappen = items.join('\n');
+  inp.value = '';
+  persistOne(e);
+  renderShopFull();
+}
+
+function deleteShopItem(itemText){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  const items = itemsOf(e).filter(i => i !== itemText);
+  e.boodschappen = items.join('\n');
+  if (e.boodschappenChecked) delete e.boodschappenChecked[itemText];
+  persistOne(e);
+  renderShopFull();
+}
+
+/* Editor */
+function openEditor(id){
+  editingId = id || null;
+  document.getElementById('editorTitle').textContent = id ? "Etentje bewerken" : "Nieuw etentje";
+
+  const e = id ? entries.find(x=>x.id===id) : null;
+
+  document.getElementById('f_type').value = e ? e.type : 'lunch';
+  document.getElementById('f_date').value = e ? e.date : '';
+  document.getElementById('f_name').value = e ? e.name : '';
+  document.getElementById('f_guests').value = e ? e.guests : '';
+  document.getElementById('f_wijnen').value = e ? e.wijnen : '';
+  document.getElementById('f_opdienstijl').value = e ? (e.opdienstijl||'') : '';
+  document.getElementById('f_boodschappen').value = e ? (e.boodschappen||'') : '';
+  document.getElementById('f_eval_wijnen').value = e ? (e.eval_wijnen||'') : '';
+  document.getElementById('f_eval_eten').value = e ? (e.eval_eten||'') : '';
+  document.getElementById('f_eval_sfeer').value = e ? (e.eval_sfeer||'') : '';
+  currentStars = e ? (e.score||0) : 0;
+  updateStarPicker();
+
+  document.getElementById('overlay').classList.add('show');
+}
+function closeEditor(){
+  document.getElementById('overlay').classList.remove('show');
+}
+
+document.getElementById('starPicker').addEventListener('click', (ev)=>{
+  if (ev.target.dataset.v){
+    currentStars = parseInt(ev.target.dataset.v);
+    updateStarPicker();
+  }
+});
+function updateStarPicker(){
+  document.querySelectorAll('#starPicker span').forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.v) <= currentStars);
+  });
+}
+
+document.getElementById('wbStarPicker').addEventListener('click', (ev)=>{
+  if (ev.target.dataset.v){
+    wbCurrentStars = parseInt(ev.target.dataset.v);
+    updateWbStarPicker();
+  }
+});
+function updateWbStarPicker(){
+  document.querySelectorAll('#wbStarPicker span').forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.v) <= wbCurrentStars);
+  });
+}
+
+function saveEntry(){
+  const name = document.getElementById('f_name').value.trim();
+  if (!name){ alert('Geef een naam/gelegenheid op.'); return; }
+
+  const existing = editingId ? entries.find(x=>x.id===editingId) : null;
+
+  const entry = {
+    id: editingId || ('e_' + Date.now()),
+    type: document.getElementById('f_type').value,
+    date: document.getElementById('f_date').value,
+    name: name,
+    guests: document.getElementById('f_guests').value.trim(),
+    aperitiefItems: existing ? (existing.aperitiefItems || []) : [],
+    sharingItems: existing ? (existing.sharingItems || []) : [],
+    amusesItems: existing ? (existing.amusesItems || []) : [],
+    voorgerechtItems: existing ? (existing.voorgerechtItems || []) : [],
+    hoofdgerechtItems: existing ? (existing.hoofdgerechtItems || []) : [],
+    dessertItems: existing ? (existing.dessertItems || []) : [],
+    wijnen: document.getElementById('f_wijnen').value.trim(),
+    wijnenLijst: existing ? (existing.wijnenLijst || []) : [],
+    voedingLijst: existing ? (existing.voedingLijst || []) : [],
+    bijlagen: existing ? (existing.bijlagen || []) : [],
+    miseEnPlaceLijst: existing ? (existing.miseEnPlaceLijst || []) : [],
+    opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
+    status: existing ? (existing.status || 'idee') : 'idee',
+    boodschappen: document.getElementById('f_boodschappen').value.trim(),
+    boodschappenChecked: existing ? (existing.boodschappenChecked || {}) : {},
+    eval_wijnen: document.getElementById('f_eval_wijnen').value.trim(),
+    eval_eten: document.getElementById('f_eval_eten').value.trim(),
+    eval_sfeer: document.getElementById('f_eval_sfeer').value.trim(),
+    score: currentStars
+  };
+
+  if (editingId){
+    const idx = entries.findIndex(x=>x.id===editingId);
+    if (idx>-1) entries[idx] = entry;
+  } else {
+    entries.push(entry);
+  }
+
+  persist();
+  closeEditor();
+  render();
+}
+
+function deleteEntry(id){
+  if (!confirm('Dit etentje verwijderen?')) return;
+  entries = entries.filter(e=>e.id!==id);
+  if (useFirebase){
+    db.collection("dineetjes").doc(id).delete().catch(err=>console.error(err));
+  } else {
+    saveLocal();
+  }
+  render();
+}
+
+/* Init */
+function init(){
+  if (useFirebase){
+    db.collection("dineetjes").onSnapshot(snap => {
+      entries = snap.docs.map(d => d.data());
+      if (!entries.length){ seedIfEmpty(); }
+      render();
+    }, err => {
+      console.error("Firestore fout, val terug op lokaal:", err);
+      useFirebase = false;
+      document.getElementById('syncNote').textContent = "Lokale opslag (Firebase-verbinding mislukt)";
+      entries = loadLocal() || [];
+      seedIfEmpty();
+      render();
+    });
+    db.collection("gerechten").onSnapshot(snap => {
+      gerechten = snap.docs.map(d => d.data());
+      if (!gerechten.length){ seedGerechtenIfEmpty(); }
+      if (document.getElementById('viewGerechten').style.display !== 'none'){ renderGerechtenList(); }
+      if (document.getElementById('viewOverzicht').style.display !== 'none'){ render(); }
+    }, err => {
+      console.error("Firestore fout (gerechten), val terug op lokaal:", err);
+      gerechten = loadGerechtenLocal() || [];
+      seedGerechtenIfEmpty();
+    });
+    db.collection("wijnenbib").onSnapshot(snap => {
+      wijnenBib = snap.docs.map(d => d.data());
+      if (!wijnenBib.length){ seedWijnenBibIfEmpty(); }
+      if (document.getElementById('viewWijnenBib').style.display !== 'none'){ renderWijnenBibList(); }
+      if (document.getElementById('viewOverzicht').style.display !== 'none'){ render(); }
+    }, err => {
+      console.error("Firestore fout (wijnenbib), val terug op lokaal:", err);
+      wijnenBib = loadWijnenBibLocal() || [];
+      seedWijnenBibIfEmpty();
+    });
+  } else {
+    entries = loadLocal() || [];
+    seedIfEmpty();
+    gerechten = loadGerechtenLocal() || [];
+    seedGerechtenIfEmpty();
+    wijnenBib = loadWijnenBibLocal() || [];
+    seedWijnenBibIfEmpty();
+    render();
+  }
+}
+init();
+</script>
+
+</body>
+</html>
