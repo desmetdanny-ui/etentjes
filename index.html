@@ -1010,6 +1010,11 @@
       <input type="text" id="f_guests" placeholder="bv. Griet, Gilbert, zus van Griet">
     </div>
 
+    <div class="field">
+      <label>Aantal personen (voor kost per persoon)</label>
+      <input type="number" id="f_aantal" min="1" placeholder="bv. 10">
+    </div>
+
     <div class="field" style="font-size:0.85em; color:var(--muted); font-family:-apple-system,sans-serif; background:var(--paper-dark); border-radius:8px; padding:10px 12px;">
       Aperitief, sharing, amuses, voorgerecht, hoofdgerecht en dessert beheer je per item rechtstreeks in de kaart zelf: open het etentje na het bewaren, en kies er per sectie een gerecht uit je bibliotheek — of maak meteen een nieuw gerecht mét ingrediënten aan. Zo blijft je boodschappenlijst altijd kloppen, en verschijnt de mise en place van dat gerecht automatisch bij dit etentje.
     </div>
@@ -1322,7 +1327,7 @@ function render(){
         </div>
         <div style="text-align:right;">
           <div class="stars">${renderStars(e.score||0)}</div>
-          ${kosten > 0 ? `<div class="card-cost">${formatEuro(kosten)}</div>` : ''}
+          ${kosten > 0 ? `<div class="card-cost">${formatEuro(kosten)}${e.aantalPersonen > 0 ? ` · ${formatEuro(kosten/e.aantalPersonen)} p.p.` : ''}</div>` : ''}
           <div class="chevron">▶</div>
         </div>
       </div>
@@ -1331,7 +1336,7 @@ function render(){
           <div class="status-picker">
             ${STATUSES.map(s => `<button class="${s.key===e.status?'active':''}" onclick="event.stopPropagation(); setEntryStatus('${e.id}', '${s.key}')">${s.label}</button>`).join('')}
           </div>
-          <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}</div>
+          <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}${e.aantalPersonen > 0 ? ` (${e.aantalPersonen} pers.)` : ''}</div>
 
           ${COURSE_DEFS.map(def => renderCourseSection(e, def)).join('')}
 
@@ -1512,7 +1517,10 @@ function renderBestelForm(){
 
     ${(wines.length || foodItems.length) ? `<div class="bestel-total" style="font-size:1.15em;">
       <span>Totaal etentje</span><span>€ ${(wineTotal+foodTotal).toFixed(2).replace('.',',')}</span>
-    </div>` : ''}
+    </div>
+    ${e.aantalPersonen > 0 ? `<div class="bestel-total" style="font-size:0.95em; color:var(--muted); font-weight:400; border-top:none; padding-top:2px;">
+      <span>Per persoon (${e.aantalPersonen})</span><span>€ ${((wineTotal+foodTotal)/e.aantalPersonen).toFixed(2).replace('.',',')}</span>
+    </div>` : ''}` : ''}
   `;
 }
 
@@ -2449,6 +2457,7 @@ function openEditor(id){
   document.getElementById('f_date').value = e ? e.date : '';
   document.getElementById('f_name').value = e ? e.name : '';
   document.getElementById('f_guests').value = e ? e.guests : '';
+  document.getElementById('f_aantal').value = e ? (e.aantalPersonen || '') : '';
   document.getElementById('f_wijnen').value = e ? e.wijnen : '';
   document.getElementById('f_opdienstijl').value = e ? (e.opdienstijl||'') : '';
   document.getElementById('f_boodschappen').value = e ? (e.boodschappen||'') : '';
@@ -2500,6 +2509,7 @@ function saveEntry(){
     date: document.getElementById('f_date').value,
     name: name,
     guests: document.getElementById('f_guests').value.trim(),
+    aantalPersonen: parseInt(document.getElementById('f_aantal').value) || 0,
     aperitiefItems: existing ? (existing.aperitiefItems || []) : [],
     sharingItems: existing ? (existing.sharingItems || []) : [],
     amusesItems: existing ? (existing.amusesItems || []) : [],
