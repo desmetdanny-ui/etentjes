@@ -207,7 +207,7 @@
     overflow:hidden;
     transition:max-height 0.25s ease;
   }
-  .card.open .card-body{ max-height:2000px; }
+  .card.open .card-body{ max-height:4000px; }
   .card-body-inner{ padding:6px 16px 16px; }
 
   .section-label{
@@ -334,6 +334,50 @@
     font-size:0.9em;
     color:var(--ink);
   }
+
+  /* Gerechten op een rij (afvinkbaar, met link naar bereiding) */
+  .dish-block{
+    background:var(--paper);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:4px 12px;
+    margin-top:4px;
+  }
+  .dish-row .wr-box{
+    width:24px;
+    height:24px;
+    min-width:24px;
+    cursor:pointer;
+    font-size:0.8em;
+  }
+  .dish-gang{
+    display:block;
+    font-family:-apple-system, sans-serif;
+    font-size:0.68em;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-top:1px;
+    text-decoration:none;
+  }
+  .dish-recept-btn{
+    font-family:-apple-system, sans-serif;
+    font-size:0.75em;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--wine-dark);
+    padding:6px 9px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .dish-norecept{
+    font-family:-apple-system, sans-serif;
+    font-size:0.7em;
+    color:var(--muted);
+    white-space:nowrap;
+    font-style:italic;
+  }
+
   .shop-list{
     list-style:none;
     margin:4px 0 0;
@@ -578,7 +622,7 @@
     border-radius:10px;
   }
   @media print{
-    header, .tabs, .back-btn, .print-btn, .fab{ display:none !important; }
+    header, .tabs, .back-btn, .print-btn, .fab, #receptOverlay{ display:none !important; }
     body{ background:#fff; }
     .bestel-sheet{ box-shadow:none; border:none; margin:0; }
   }
@@ -632,7 +676,7 @@
     overflow:hidden;
     transition:max-height 0.2s ease;
   }
-  .gerecht-card.open .gerecht-body{ max-height:2000px; }
+  .gerecht-card.open .gerecht-body{ max-height:3000px; }
   .gerecht-body-inner{
     padding:0 14px 14px;
     font-size:0.92em;
@@ -796,6 +840,45 @@
     margin:0 0 14px;
     font-weight:400;
   }
+
+  /* Recept-raadpleging (onderblad) */
+  #receptOverlay{
+    position:fixed; inset:0;
+    background:rgba(58,46,34,0.55);
+    display:none;
+    align-items:flex-end;
+    z-index:60;
+  }
+  #receptOverlay.show{ display:flex; }
+  #receptSheet{
+    background:var(--paper);
+    width:100%;
+    max-height:92vh;
+    overflow-y:auto;
+    border-radius:20px 20px 0 0;
+    padding:18px 18px 30px;
+  }
+  #receptSheet h2{
+    color:var(--wine);
+    margin:0 0 4px;
+    font-weight:400;
+  }
+  .recept-step{
+    display:flex;
+    gap:10px;
+    padding:7px 0;
+    border-bottom:1px dotted var(--border);
+    font-size:0.97em;
+    line-height:1.45;
+  }
+  .recept-step:last-child{ border-bottom:none; }
+  .recept-step .nr{
+    color:var(--gold);
+    font-family:-apple-system, sans-serif;
+    font-weight:600;
+    min-width:20px;
+  }
+
   .field{ margin-bottom:12px; }
   .field label{
     display:block;
@@ -981,6 +1064,16 @@
 
 <button class="fab" onclick="openEditor()">+</button>
 
+<!-- Recept raadplegen -->
+<div id="receptOverlay" onclick="if(event.target===this) closeRecept()">
+  <div id="receptSheet">
+    <div id="receptContent"></div>
+    <div style="margin-top:18px;">
+      <button class="print-btn" onclick="closeRecept()">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <!-- Editor overlay -->
 <div id="overlay">
   <div id="editor">
@@ -1148,6 +1241,7 @@ document.getElementById('syncNote').textContent = useFirebase
 const LOCAL_KEY = "dineetjes_entries_v1";
 const GERECHTEN_LOCAL_KEY = "dineetjes_gerechten_v1";
 const WIJNENBIB_LOCAL_KEY = "dineetjes_wijnenbib_v1";
+const RECEPT_IMPORT_KEY = "dineetjes_recept_import_v1";
 let entries = [];
 let gerechten = [];
 let wijnenBib = [];
@@ -1338,6 +1432,8 @@ function render(){
           </div>
           <div class="guests"><strong>Gasten:</strong> ${escapeHtml(e.guests||'-')}${e.aantalPersonen > 0 ? ` (${e.aantalPersonen} pers.)` : ''}</div>
 
+          ${renderDishChecklist(e)}
+
           ${COURSE_DEFS.map(def => renderCourseSection(e, def)).join('')}
 
           ${e.wijnen ? `<div class="section-label">Wijnen — context</div><div class="wine-line">${nl2br(e.wijnen)}</div>` : ''}
@@ -1379,6 +1475,80 @@ function toggleCard(id){
   const willOpen = !card.classList.contains('open');
   card.classList.toggle('open');
   if (willOpen) openCardIds.add(id); else openCardIds.delete(id);
+}
+
+/* ============================================================
+   GERECHTEN OP EEN RIJ
+   Alle gerechten van het menu, in volgorde van de gangen, met
+   een vinkje om af te tikken (klaar / geserveerd) en een knop
+   om de bereiding uit de bibliotheek te raadplegen. Het vinkje
+   wordt bewaard per gang + gerechtnaam.
+   ============================================================ */
+function dishKey(defKey, name){ return defKey + '|' + name; }
+
+function findGerechtByName(name){
+  const n = (name||'').trim().toLowerCase();
+  return gerechten.find(g => (g.naam||'').trim().toLowerCase() === n) || null;
+}
+
+function renderDishChecklist(e){
+  const rows = [];
+  COURSE_DEFS.forEach(def => {
+    getCourseItems(e, def).forEach((name, i) => rows.push({def, name, i}));
+  });
+  if (!rows.length) return '';
+  const checked = e.gerechtenChecked || {};
+  const done = rows.filter(r => checked[dishKey(r.def.key, r.name)]).length;
+  return `
+    <div class="section-label">🍽️ Gerechten op een rij (${done}/${rows.length})</div>
+    <div class="dish-block">
+      ${rows.map(r => {
+        const isDone = !!checked[dishKey(r.def.key, r.name)];
+        const g = findGerechtByName(r.name);
+        return `
+        <div class="wine-row dish-row">
+          <span class="wr-box ${isDone?'checked':''}" onclick="event.stopPropagation(); toggleDishDone('${e.id}', '${r.def.key}', ${r.i})">${isDone?'✓':''}</span>
+          <span class="wr-name ${isDone?'wr-done':''}">${escapeHtml(r.name)}<span class="dish-gang">${r.def.label}</span></span>
+          ${g ? `<button class="dish-recept-btn" onclick="event.stopPropagation(); openRecept('${g.id}')">📖 Bereiding</button>` : `<span class="dish-norecept">geen recept</span>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleDishDone(entryId, defKey, index){
+  const e = entries.find(x=>x.id===entryId);
+  const def = COURSE_DEFS.find(d=>d.key===defKey);
+  if (!e || !def) return;
+  const name = getCourseItems(e, def)[index];
+  if (name === undefined) return;
+  e.gerechtenChecked = e.gerechtenChecked || {};
+  const k = dishKey(defKey, name);
+  e.gerechtenChecked[k] = !e.gerechtenChecked[k];
+  persistOne(e);
+  reRenderKeepOpen(entryId);
+}
+
+function openRecept(gerechtId){
+  const g = gerechten.find(x=>x.id===gerechtId);
+  if (!g) return;
+  const voorbereiding = g.voorbereiding || [];
+  const stappen = (g.bereiding||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  const stepList = arr => arr.map((s,i) => `<div class="recept-step"><span class="nr">${i+1}</span><span>${escapeHtml(s)}</span></div>`).join('');
+  document.getElementById('receptContent').innerHTML = `
+    <h2>${escapeHtml(g.naam)}</h2>
+    <div class="gerecht-head" style="padding:0; cursor:default;"><span class="gc-cat">${GERECHT_CATLABEL[g.categorie]||g.categorie}</span></div>
+    ${g.foto ? `<img class="gerecht-foto" src="${escapeHtml(g.foto)}" alt="${escapeHtml(g.naam)}">` : ''}
+    <div class="section-label" style="margin-top:16px;">Ingrediënten</div>
+    ${(g.ingredienten||[]).map(i => `<div class="gerecht-ing">• ${escapeHtml(i)}</div>`).join('') || '<div class="bestel-empty">Geen ingrediënten genoteerd</div>'}
+    ${voorbereiding.length ? `<div class="section-label" style="margin-top:16px;">🔪 Voorbereiding / mise en place</div>${stepList(voorbereiding)}` : ''}
+    <div class="section-label" style="margin-top:16px;">Bereiding op het moment zelf</div>
+    ${stappen.length ? stepList(stappen) : '<div class="bestel-empty">Nog geen bereiding genoteerd. Vul ze aan via de Gerechten-tab.</div>'}
+  `;
+  document.getElementById('receptOverlay').classList.add('show');
+  document.getElementById('receptSheet').scrollTop = 0;
+}
+function closeRecept(){
+  document.getElementById('receptOverlay').classList.remove('show');
 }
 
 /* ============================================================
@@ -1946,6 +2116,113 @@ function seedGerechtenIfEmpty(){
   gerechten.forEach(g => persistGerecht(g));
 }
 
+/* ============================================================
+   NIEUWE RECEPTEN (november 2026)
+   Worden één keer toegevoegd aan de bestaande bibliotheek, ook
+   als die al gevuld is. Hoeveelheden voor 4 personen.
+   ============================================================ */
+const EXTRA_GERECHTEN = [
+  {id:"g-coq-au-vin", naam:"Coq au vin", categorie:"hoofdgerecht",
+    ingredienten:[
+      "8 kippenbouten of 1 hoevekip in 8 stukken (ca. 1,8 kg)",
+      "1 fles rode bourgogne / pinot noir (75 cl)",
+      "200 g gerookt spek in blokjes (lardons)",
+      "250 g kleine champignons",
+      "16 zilveruitjes of 10 sjalotjes",
+      "2 wortels",
+      "1 ui",
+      "4 teentjes look",
+      "2 el bloem",
+      "2 el tomatenpuree",
+      "4 cl cognac",
+      "30 cl kippenbouillon",
+      "Tijm, laurier en peterseliestengels (bouquet garni)",
+      "50 g boter",
+      "Verse platte peterselie (afwerking)",
+      "Peper en zout",
+      "Bijgerecht: aardappelpuree, tagliatelle of krieltjes"
+    ],
+    voorbereiding:[
+      "Daags vooraf: wortel en ui in stukken, look kneuzen",
+      "Daags vooraf: kip met groenten, bouquet garni en de rode wijn 12 tot 24 uur marineren in de koelkast",
+      "Kip uit de marinade halen en goed droogdeppen (anders kleurt ze niet)",
+      "Marinade zeven: wijn bewaren, groenten apart houden",
+      "Champignons schoonborstelen, grote halveren",
+      "Zilveruitjes pellen (eerst 1 minuut in kokend water, dan gaat het vlot)",
+      "Peterselie fijnhakken"
+    ],
+    bereiding:"Spek in een gietijzeren braadpan zonder vet uitbakken tot het krokant is, uitscheppen.\nKip kruiden met peper en zout en in het spekvet met een klontje boter in porties rondom goudbruin bakken. Uitscheppen.\nDe groenten uit de marinade 5 minuten aanstoven, tomatenpuree erbij en 1 minuut meebakken.\nBloem erover strooien en goed roeren. Desgewenst flamberen met de cognac.\nBlussen met de gezeefde wijn, bouillon toevoegen en de aanbaksels losroeren.\nKip en spek terug in de pan, bouquet garni erbij. Deksel op en 1 uur 15 minuten zacht laten sudderen.\nOndertussen zilveruitjes en champignons apart in boter goudbruin bakken, peper en zout.\nUitjes en champignons de laatste 15 minuten mee laten stoven.\nBouquet garni verwijderen. Is de saus te dun, kip uitscheppen en de saus enkele minuten inkoken.\nProeven, op smaak brengen, afwerken met peterselie. Serveren met puree, tagliatelle of krieltjes.\nTip: het gerecht wordt nog beter als je het een dag vooraf maakt en zachtjes opwarmt. Schenk er dezelfde stijl wijn bij als je erin kookte.",
+    foto:""},
+  {id:"g-mosselen-gegratineerd-look", naam:"Gegratineerde mosselen met look", categorie:"voorgerecht",
+    ingredienten:[
+      "1 kg grote Zeeuwse mosselen (ca. 6 per persoon)",
+      "125 g zachte boter",
+      "3 teentjes look",
+      "1 sjalot",
+      "1 bosje platte peterselie",
+      "4 el panko of paneermeel",
+      "2 el geraspte Parmezaan (optioneel)",
+      "10 cl droge witte wijn",
+      "1 citroen",
+      "Peper",
+      "Grof zeezout (om de mosselen stabiel op te leggen)",
+      "Stokbrood"
+    ],
+    voorbereiding:[
+      "Mosselen spoelen, baardjes verwijderen, gebroken of open schelpen weggooien",
+      "Sjalot fijnsnijden; mosselen met sjalot en witte wijn afgedekt 3 à 4 minuten openstomen tot ze net open zijn",
+      "Mosselen laten afkoelen, dichte exemplaren weggooien",
+      "Bovenste schelp verwijderen, mossel losmaken en in de onderste schelp laten liggen",
+      "Look en peterselie fijnhakken",
+      "Kruidenboter mengen: zachte boter, look, peterselie, peper en een scheutje citroensap",
+      "Op elke mossel een klontje kruidenboter, daarover panko (met Parmezaan)",
+      "Mosselen op een bed van grof zout op de ovenplaat leggen en afgedekt in de koelkast bewaren (kan tot een dag vooraf)"
+    ],
+    bereiding:"Grill van de oven voorverwarmen (of oven op 220 °C).\nMosselen 3 tot 5 minuten onder de grill tot de boter borrelt en de korst goudbruin is. Goed in het oog houden, dit gaat snel.\nMeteen serveren met een partje citroen en vers stokbrood voor de boter.",
+    foto:""},
+  {id:"g-carpaccio-sintjakob-citrus", naam:"Carpaccio van Sint-Jakobsvruchten met citrus", categorie:"voorgerecht",
+    ingredienten:[
+      "12 verse Sint-Jakobsvruchten zonder koraal (sashimikwaliteit)",
+      "1 sinaasappel",
+      "1 limoen (onbespoten)",
+      "4 radijsjes",
+      "1/2 groene appel (Granny Smith)",
+      "Extra vierge olijfolie",
+      "Fleur de sel",
+      "Roze peperbessen",
+      "Verse dille of kervel"
+    ],
+    voorbereiding:[
+      "Borden in de koelkast zetten zodat ze goed koud zijn",
+      "Sinaasappel schillen en in partjes (suprêmes) snijden, sap opvangen",
+      "Vinaigrette: 2 el sinaasappelsap, sap van 1/2 limoen en 4 el olijfolie mengen, koel zetten",
+      "Radijsjes en appel flinterdun snijden en in ijskoud water leggen",
+      "Dille of kervel plukken",
+      "Sint-Jakobsvruchten droogdeppen en 15 à 20 minuten in de diepvries leggen (zo snijd je ze makkelijk dun)"
+    ],
+    bereiding:"Sint-Jakobsvruchten met een scherp mes in plakjes van 2 à 3 mm snijden.\nDakpansgewijs schikken op de koude borden.\nRadijs en appel uitlekken en droogdeppen.\nVlak voor het opdienen de vinaigrette over de carpaccio lepelen.\nAfwerken met fleur de sel, wat geplette roze peper en een beetje limoenrasp.\nGarneren met sinaasappelpartjes, radijs, appel en dille.\nMeteen serveren met een goed gekoelde cava brut (6 à 8 °C), bv. Capçanes Sense Cap: de frisse bubbels en het citrus passen bij het zoete en zilte van de Sint-Jakob.",
+    foto:""}
+];
+
+function importExtraGerechten(){
+  let gedaan = [];
+  try{ gedaan = JSON.parse(localStorage.getItem(RECEPT_IMPORT_KEY) || '[]'); }catch(e){ gedaan = []; }
+  let gewijzigd = false;
+  EXTRA_GERECHTEN.forEach(g => {
+    if (gedaan.includes(g.id)) return;
+    if (!gerechten.find(x => x.id === g.id)){
+      const kopie = JSON.parse(JSON.stringify(g));
+      gerechten.push(kopie);
+      persistGerecht(kopie);
+    }
+    gedaan.push(g.id);
+    gewijzigd = true;
+  });
+  if (gewijzigd){
+    try{ localStorage.setItem(RECEPT_IMPORT_KEY, JSON.stringify(gedaan)); }catch(e){}
+  }
+}
+
 function renderGerechtenList(){
   const list = document.getElementById('gerechtenList');
   if (!gerechten.length){
@@ -2215,6 +2492,29 @@ function seedWijnenBibIfEmpty(){
     {id:"wb-veuve-ambal", naam:"Veuve Ambal Crémant de Bourgogne Grande Cuvée Brut Rosé", prijs:0, regio:"Crémant, Bourgogne", ervaring:"", score:0}
   ];
   wijnenBib.forEach(w => persistWijnBib(w));
+}
+
+/* Nieuwe wijnen: één keer toegevoegd aan de bestaande wijnkelder. */
+const WIJN_IMPORT_KEY = "dineetjes_wijn_import_v1";
+const EXTRA_WIJNEN = [
+  {id:"wb-capcanes-sense-cap", naam:"Cava Brut Capçanes Sense Cap", prijs:13.95, regio:"Macabeo, xarel·lo, parellada; Catalonië (DO Cava)", ervaring:"Appel, citrus en een toets venkel, 16 tot 22 maanden op de gist. Bedoeld bij de carpaccio van Sint-Jakobsvruchten.", score:0},
+  {id:"wb-juve-camps-rdf-magnum", naam:"Juvé & Camps Reserva de la Familia Brut Nature, magnum", prijs:47.95, regio:"Gran Reserva, DO Cava (Penedès)", ervaring:"Magnum 1,5 l (wijnimport.be). 36 maanden rijping, brut nature. Doorschenken bij aperitief en carpaccio van Sint-Jakobsvruchten. Vooraf 4 à 5 uur koelen, schenken op 8 à 10 °C.", score:0}
+];
+function importExtraWijnen(){
+  let gedaan = [];
+  try{ gedaan = JSON.parse(localStorage.getItem(WIJN_IMPORT_KEY) || '[]'); }catch(e){ gedaan = []; }
+  let gewijzigd = false;
+  EXTRA_WIJNEN.forEach(w => {
+    if (gedaan.includes(w.id)) return;
+    if (!wijnenBib.find(x => x.id === w.id)){
+      const kopie = Object.assign({}, w);
+      wijnenBib.push(kopie);
+      persistWijnBib(kopie);
+    }
+    gedaan.push(w.id);
+    gewijzigd = true;
+  });
+  if (gewijzigd){ try{ localStorage.setItem(WIJN_IMPORT_KEY, JSON.stringify(gedaan)); }catch(e){} }
 }
 
 function renderWijnenBibList(){
@@ -2516,6 +2816,7 @@ function saveEntry(){
     voorgerechtItems: existing ? (existing.voorgerechtItems || []) : [],
     hoofdgerechtItems: existing ? (existing.hoofdgerechtItems || []) : [],
     dessertItems: existing ? (existing.dessertItems || []) : [],
+    gerechtenChecked: existing ? (existing.gerechtenChecked || {}) : {},
     wijnen: document.getElementById('f_wijnen').value.trim(),
     wijnenLijst: existing ? (existing.wijnenLijst || []) : [],
     voedingLijst: existing ? (existing.voedingLijst || []) : [],
@@ -2572,30 +2873,36 @@ function init(){
     db.collection("gerechten").onSnapshot(snap => {
       gerechten = snap.docs.map(d => d.data());
       if (!gerechten.length){ seedGerechtenIfEmpty(); }
+      if (!snap.metadata.fromCache || gerechten.length){ importExtraGerechten(); }
       if (document.getElementById('viewGerechten').style.display !== 'none'){ renderGerechtenList(); }
       if (document.getElementById('viewOverzicht').style.display !== 'none'){ render(); }
     }, err => {
       console.error("Firestore fout (gerechten), val terug op lokaal:", err);
       gerechten = loadGerechtenLocal() || [];
       seedGerechtenIfEmpty();
+      importExtraGerechten();
     });
     db.collection("wijnenbib").onSnapshot(snap => {
       wijnenBib = snap.docs.map(d => d.data());
       if (!wijnenBib.length){ seedWijnenBibIfEmpty(); }
+      if (!snap.metadata.fromCache || wijnenBib.length){ importExtraWijnen(); }
       if (document.getElementById('viewWijnenBib').style.display !== 'none'){ renderWijnenBibList(); }
       if (document.getElementById('viewOverzicht').style.display !== 'none'){ render(); }
     }, err => {
       console.error("Firestore fout (wijnenbib), val terug op lokaal:", err);
       wijnenBib = loadWijnenBibLocal() || [];
       seedWijnenBibIfEmpty();
+      importExtraWijnen();
     });
   } else {
     entries = loadLocal() || [];
     seedIfEmpty();
     gerechten = loadGerechtenLocal() || [];
     seedGerechtenIfEmpty();
+    importExtraGerechten();
     wijnenBib = loadWijnenBibLocal() || [];
     seedWijnenBibIfEmpty();
+    importExtraWijnen();
     render();
   }
 }
