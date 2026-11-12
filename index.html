@@ -516,6 +516,21 @@
     font-size:1.4em;
   }
   .progress-wrap{ padding:10px 16px 4px; }
+  .persons-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 16px 0;
+    font-family:-apple-system, sans-serif; font-size:0.95em; color:var(--ink);
+  }
+  .persons-row button{
+    width:36px; height:36px; border-radius:50%;
+    border:1px solid var(--border); background:var(--card);
+    color:var(--wine); font-size:1.3em; line-height:1;
+  }
+  .persons-row strong{ min-width:24px; text-align:center; font-size:1.15em; color:var(--wine); }
+  .persons-hint{
+    padding:4px 16px 0; font-family:-apple-system, sans-serif;
+    font-size:0.74em; color:var(--muted);
+  }
   .progress-bar-bg{
     background:var(--paper-dark);
     border-radius:10px;
@@ -968,6 +983,14 @@
   <div id="shopFullScreen" style="display:none;">
     <button class="back-btn" onclick="closeShopFull()">← terug</button>
     <h2 id="shopFullTitle" class="shop-full-title"></h2>
+    <div class="persons-row">
+      <span>Boodschappen voor</span>
+      <button onclick="stapAantalPersonen(-1)">−</button>
+      <strong id="shopPersonsNum">–</strong>
+      <button onclick="stapAantalPersonen(1)">+</button>
+      <span>personen</span>
+    </div>
+    <div class="persons-hint" id="shopPersonsHint"></div>
     <div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" id="shopProgressBar"></div></div></div>
     <ul class="shop-list big" id="shopFullList"></ul>
     <div class="shop-add-row">
@@ -1856,9 +1879,29 @@ function deleteCourseItem(entryId, key, index){
   const def = COURSE_DEFS.find(d=>d.key===key);
   if (!entry || !def) return;
   const items = getCourseItems(entry, def);
+  const naam = items[index];
   items.splice(index, 1);
+  verwijderGerechtSporen(entry, naam);
   persistOne(entry);
   reRenderKeepOpen(entryId);
+}
+
+/* Haalt de ingrediënten, de mise en place en het logboek van een gerecht
+   uit het etentje, als de naam overeenkomt met een gerecht uit de bibliotheek. */
+function verwijderGerechtSporen(entry, naam){
+  const g = gerechten.find(x => x.naam === naam);
+  if (!g) return;
+  const basis = g.basis || 4;
+  const rec = (entry.gerechtenLog || []).find(r => r.id === g.id);
+  const teVerwijderen = new Set((g.ingredienten||[]));
+  if (rec) (g.ingredienten||[]).forEach(i => teVerwijderen.add(schaalIngredient(i, basis, rec.n)));
+  entry.boodschappenChecked = entry.boodschappenChecked || {};
+  entry.boodschappen = itemsOf(entry).filter(i => {
+    if (teVerwijderen.has(i)){ delete entry.boodschappenChecked[i]; return false; }
+    return true;
+  }).join('\n');
+  entry.miseEnPlaceLijst = (entry.miseEnPlaceLijst || []).filter(m => m.naam !== naam);
+  entry.gerechtenLog = (entry.gerechtenLog || []).filter(r => r.id !== g.id);
 }
 
 function renderWineList(e){
@@ -2348,7 +2391,7 @@ const EXTRA_GERECHTEN = [
     ],
     bereiding:"Room, melk en suiker in een pannetje tegen de kook aan brengen.\nVan het vuur halen, de gehakte chocolade erbij en 1 minuut laten staan.\nVanuit het midden glad roeren tot een glanzende saus.\nBoter en een snuifje zout erdoor roeren, eventueel de cognac of Grand Marnier.\nIs de saus te dik, een scheutje warme melk toevoegen. Warm houden au bain-marie (niet laten koken).\nIn elke koude coupe twee of drie bollen vanille-ijs scheppen.\nEen toef slagroom erop, amandelschilfers of een koekje erbij.\nDe warme chocoladesaus apart in een kannetje serveren, zodat iedereen zelf giet.\nTip: de saus kan een dag vooraf gemaakt worden en zacht opgewarmd au bain-marie.",
     foto:""},
-  {id:"g-garnaalballetjes", naam:"Garnaalballetjes (hapje bij de cava)", categorie:"sharing",
+  {id:"g-garnaalballetjes", basis:2, naam:"Garnaalballetjes (hapje bij de cava)", categorie:"sharing",
     ingredienten:[
       "12 mini garnaalkroketjes (gekocht, diepvries of vers van de traiteur)",
       "Frituurolie (alleen als het etiket frituren vraagt)",
@@ -2364,7 +2407,7 @@ const EXTRA_GERECHTEN = [
     ],
     bereiding:"Kroketjes bakken of frituren volgens het etiket tot ze goudbruin en heet zijn.\\nOp keukenpapier laten uitlekken.\\nMeteen serveren met een partje citroen en de dipsaus.",
     foto:""},
-  {id:"g-bisque-tasje", naam:"Tasje garnalenbisque (aankoop)", categorie:"sharing",
+  {id:"g-bisque-tasje", basis:2, naam:"Tasje garnalenbisque (aankoop)", categorie:"sharing",
     ingredienten:[
       "Garnalenbisque (gekocht), ca. 20 cl per persoon: 1 pak of pot van 40 tot 50 cl",
       "2 el room of crème fraîche (afwerking, optioneel)",
@@ -2376,7 +2419,7 @@ const EXTRA_GERECHTEN = [
     ],
     bereiding:"Bisque zachtjes opwarmen, niet laten koken.\\nEventueel een scheutje cognac erdoor.\\nIn de voorverwarmde tasjes gieten en afwerken met een lepeltje room en wat bieslook.\\nMeteen serveren.",
     foto:""},
-  {id:"g-mosseltjes-kruidenboter-pijnboompitten", naam:"Mosseltjes met kruidenboter, pijnboompitten en soldaatjes", categorie:"sharing",
+  {id:"g-mosseltjes-kruidenboter-pijnboompitten", basis:2, naam:"Mosseltjes met kruidenboter, pijnboompitten en soldaatjes", categorie:"sharing",
     ingredienten:[
       "500 g verse mosselen (ca. 7 tot 8 per persoon)",
       "60 g zachte boter",
@@ -2400,7 +2443,7 @@ const EXTRA_GERECHTEN = [
     ],
     bereiding:"Bovenste schelp verwijderen en de mossel in de onderste schelp laten liggen.\\nOp elke mossel een klontje kruidenboter en wat pijnboompitten leggen.\\nMosselen op een ovenplaat 3 à 5 minuten onder de grill tot de boter borrelt. Goed in het oog houden.\\nSoldaatjes in wat boter of olijfolie goudbruin roosteren.\\nMeteen serveren, met de soldaatjes om de kruidenboter op te dopen.",
     foto:""},
-  {id:"g-burrata-dip", naam:"Burrata dip met soldaatjes", categorie:"sharing",
+  {id:"g-burrata-dip", basis:2, naam:"Burrata dip met soldaatjes", categorie:"sharing",
     ingredienten:[
       "1 burrata (125 g)",
       "2 el olijfolie extra vierge",
@@ -2434,7 +2477,9 @@ function importExtraGerechten(){
   if (gewijzigd){
     try{ localStorage.setItem(RECEPT_IMPORT_KEY, JSON.stringify(gedaan)); }catch(e){}
   }
+  migreerGerechten();
 }
+
 
 function renderGerechtenList(){
   const list = document.getElementById('gerechtenList');
@@ -2646,6 +2691,131 @@ function renderGerechtPickerOptions(entryId){
 
 const COURSE_FIELD_BY_CAT = {aperitief:'aperitief', sharing:'sharing', amuses:'amuses', voorgerecht:'voorgerecht', hoofdgerecht:'hoofdgerecht', dessert:'dessert'};
 
+/* ============================================================
+   SCHALEN NAAR AANTAL PERSONEN
+   Elk gerecht heeft een 'basis' (voor hoeveel personen de
+   hoeveelheden geschreven zijn, standaard 4). Alleen het eerste
+   getal van een ingrediëntregel wordt geschaald ("500 g", "1/2",
+   "15 à 20 cl"). Regels zonder getal blijven ongewijzigd.
+   ============================================================ */
+const SCHAAL_EENHEDEN = {g:'g', kg:'kg', cl:'cl', ml:'ml', dl:'dl', l:'l', liter:'l', el:'el', tl:'tl'};
+const SCHAAL_MEERVOUD = {bosje:'bosjes', fles:'flessen', citroen:'citroenen', sjalot:'sjalotten', ui:'uien', wortel:'wortels', limoen:'limoenen', blik:'blikken', pak:'pakken', pot:'potten', bol:'bollen', zakje:'zakjes', kropje:'kropjes', sneetje:'sneetjes'};
+function parseGetal(t){
+  t = t.trim();
+  let m;
+  if ((m = t.match(/^(\d+)\s+(\d+)\/(\d+)$/))) return parseInt(m[1]) + parseInt(m[2])/parseInt(m[3]);
+  if ((m = t.match(/^(\d+)\/(\d+)$/))) return parseInt(m[1])/parseInt(m[2]);
+  return parseFloat(t.replace(',', '.'));
+}
+function fmtGetal(v){
+  return (Math.round(v*10)/10).toString().replace('.', ',');
+}
+function rondGetal(v, eenheid){
+  if (!eenheid){
+    // telbaar (stuks): halve en kwart stukken onder 1, daarboven naar boven afronden
+    if (v < 1) return v >= 0.375 ? '1/2' : '1/4';
+    return String(Math.ceil(v - 0.0001));
+  }
+  if (eenheid === 'g'){
+    if (v < 50) return String(Math.max(5, Math.round(v/5)*5));
+    return String(Math.round(v/10)*10);
+  }
+  if (eenheid === 'ml') return String(Math.max(10, Math.round(v/10)*10));
+  if (eenheid === 'cl') return v < 10 ? String(Math.max(1, Math.round(v))) : String(Math.round(v/5)*5);
+  if (eenheid === 'el' || eenheid === 'tl'){
+    const r = Math.max(0.5, Math.round(v*2)/2);
+    return fmtGetal(r);
+  }
+  return fmtGetal(Math.max(0.1, v)); // kg, l, dl
+}
+function schaalIngredient(tekst, basis, n){
+  if (!basis || !n || basis === n) return tekst;
+  const re = /^(ca\.?\s*)?(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?)(?:\s*(?:à|tot)\s*(\d+(?:[.,]\d+)?))?(\s*)(.*)$/i;
+  const m = tekst.match(re);
+  if (!m) return tekst;
+  const factor = n / basis;
+  const rest = m[5];
+  const eenheidM = rest.match(/^([A-Za-zé]+)\b/);
+  const eenheid = eenheidM ? SCHAAL_EENHEDEN[eenheidM[1].toLowerCase()] : null;
+  // "1/2 citroen", "16/20": een breuk als eerste getal is een hoeveelheid, geen maat
+  let a = rondGetal(parseGetal(m[2]) * factor, eenheid);
+  let b = m[3] ? rondGetal(parseGetal(m[3]) * factor, eenheid) : null;
+  const ca = m[1] || '';
+  let restOut = rest;
+  if (eenheid === 'g' && parseFloat(a) >= 1000){
+    a = fmtGetal(parseFloat(a) / 1000);
+    if (b !== null) b = fmtGetal(parseFloat(b) / 1000);
+    restOut = rest.replace(/^g\b/i, 'kg');
+  } else if (!eenheid){
+    const w = rest.match(/^([A-Za-zéë]+)/);
+    const meervoud = w && SCHAAL_MEERVOUD[w[1].toLowerCase()];
+    const grootste = parseGetal(b !== null ? b : a);
+    if (meervoud && grootste > 1.0001) restOut = meervoud + rest.slice(w[1].length);
+  }
+  return ca + a + (b !== null && b !== a ? ' à ' + b : '') + (m[4] || ' ') + restOut;
+}
+
+function gerechtLijnen(g, n){
+  const basis = g.basis || 4;
+  return (g.ingredienten||[]).map(i => schaalIngredient(i, basis, n));
+}
+
+/* Zet het aantal personen van een etentje en schaal de lijnen van alle
+   gerechten die vanaf deze versie werden toegevoegd mee. */
+function zetAantalPersonen(e, nieuw){
+  nieuw = Math.max(1, Math.min(60, parseInt(nieuw) || 1));
+  let items = itemsOf(e);
+  e.boodschappenChecked = e.boodschappenChecked || {};
+  (e.gerechtenLog || []).forEach(rec => {
+    const g = gerechten.find(x => x.id === rec.id);
+    if (!g) return;
+    const basis = g.basis || 4;
+    (g.ingredienten||[]).forEach(i => {
+      const oud = schaalIngredient(i, basis, rec.n);
+      const nw = schaalIngredient(i, basis, nieuw);
+      if (oud === nw) return;
+      const idx = items.indexOf(oud);
+      if (idx > -1){
+        items[idx] = nw;
+        if (e.boodschappenChecked[oud] !== undefined){
+          e.boodschappenChecked[nw] = e.boodschappenChecked[oud];
+          delete e.boodschappenChecked[oud];
+        }
+      }
+    });
+    rec.n = nieuw;
+  });
+  e.boodschappen = items.join('\n');
+  e.aantalPersonen = nieuw;
+  persistOne(e);
+}
+
+function stapAantalPersonen(delta){
+  const e = entries.find(x=>x.id===activeShopEntryId);
+  if (!e) return;
+  zetAantalPersonen(e, e.aantalPersonen > 0 ? e.aantalPersonen + delta : 2);
+  renderShopFull();
+}
+
+/* Eénmalige aanvulling: de garnalencocktail uit de eerste bibliotheek had
+   geen hoeveelheden. Alleen aangepast als je de oorspronkelijke lijst niet
+   zelf wijzigde. */
+const GERECHT_MIGRATIE_KEY = "dineetjes_gerecht_migratie_v1";
+function migreerGerechten(){
+  let gedaan = [];
+  try{ gedaan = JSON.parse(localStorage.getItem(GERECHT_MIGRATIE_KEY) || '[]'); }catch(e){ gedaan = []; }
+  if (gedaan.includes('garnalencocktail-hoeveelheden')) return;
+  const g = gerechten.find(x => x.id === 'g-garnalencocktail');
+  const oorspronkelijk = ["Grijze garnalen","IJsbergsla","Mayonaise","Ketchup","Cognac","Citroen"];
+  if (g && JSON.stringify(g.ingredienten) === JSON.stringify(oorspronkelijk)){
+    g.ingredienten = ["150 g grijze garnalen","1/4 ijsbergsla","3 el mayonaise","1 el ketchup","1 el cognac","1 citroen"];
+    g.basis = 2;
+    persistGerecht(g);
+  }
+  gedaan.push('garnalencocktail-hoeveelheden');
+  try{ localStorage.setItem(GERECHT_MIGRATIE_KEY, JSON.stringify(gedaan)); }catch(e){}
+}
+
 function applyGerechtToEntry(entryId, gerechtId){
   const entry = entries.find(x=>x.id===entryId);
   const g = gerechten.find(x=>x.id===gerechtId);
@@ -2661,11 +2831,14 @@ function applyGerechtToEntry(entryId, gerechtId){
 
   // Ingrediënten toevoegen aan de boodschappenlijst (zonder exacte duplicaten)
   const bestaande = itemsOf(entry);
-  const nieuw = (g.ingredienten||[]).filter(i => !bestaande.includes(i));
+  const n = entry.aantalPersonen > 0 ? entry.aantalPersonen : (g.basis || 4);
+  const nieuw = gerechtLijnen(g, n).filter(i => !bestaande.includes(i));
   entry.boodschappen = [...bestaande, ...nieuw].join('\n');
+  entry.gerechtenLog = entry.gerechtenLog || [];
+  if (!entry.gerechtenLog.find(r => r.id === g.id)) entry.gerechtenLog.push({id: g.id, n});
 
   // Voorbereidingsstappen (mise en place) toevoegen als nieuwe, aftikbare groep
-  if (g.voorbereiding && g.voorbereiding.length){
+  if (g.voorbereiding && g.voorbereiding.length && !(entry.miseEnPlaceLijst || []).some(m => m.naam === g.naam)){
     entry.miseEnPlaceLijst = entry.miseEnPlaceLijst || [];
     entry.miseEnPlaceLijst.push({
       naam: g.naam,
@@ -2905,6 +3078,10 @@ function renderShopFull(){
   const e = entries.find(x=>x.id===activeShopEntryId);
   if (!e) { closeShopFull(); return; }
   document.getElementById('shopFullTitle').textContent = e.name || '(zonder naam)';
+  document.getElementById('shopPersonsNum').textContent = e.aantalPersonen > 0 ? e.aantalPersonen : '?';
+  document.getElementById('shopPersonsHint').textContent = e.aantalPersonen > 0
+    ? (e.gerechtenLog && e.gerechtenLog.length ? 'Hoeveelheden van gerechten die je aan dit etentje toevoegde, schalen mee.' : 'Gerechten die je eerder toevoegde, staan nog op hun oude hoeveelheden. Voeg ze opnieuw toe om te schalen.')
+    : 'Nog geen aantal ingevuld. Tik op + of − om het in te stellen.';
   const items = shopItemsOf(e);
   const doneCount = items.filter(item => shopItemDone(e, item)).length;
   const pct = items.length ? (doneCount/items.length)*100 : 0;
@@ -3038,6 +3215,7 @@ function saveEntry(){
     voedingLijst: existing ? (existing.voedingLijst || []) : [],
     bijlagen: existing ? (existing.bijlagen || []) : [],
     miseEnPlaceLijst: existing ? (existing.miseEnPlaceLijst || []) : [],
+    gerechtenLog: existing ? (existing.gerechtenLog || []) : [],
     opdienstijl: document.getElementById('f_opdienstijl').value.trim(),
     status: existing ? (existing.status || 'idee') : 'idee',
     boodschappen: document.getElementById('f_boodschappen').value.trim(),
@@ -3051,6 +3229,9 @@ function saveEntry(){
   if (editingId){
     const idx = entries.findIndex(x=>x.id===editingId);
     if (idx>-1) entries[idx] = entry;
+    if (existing && entry.aantalPersonen > 0 && entry.aantalPersonen !== existing.aantalPersonen){
+      zetAantalPersonen(entry, entry.aantalPersonen);
+    }
   } else {
     entries.push(entry);
   }
