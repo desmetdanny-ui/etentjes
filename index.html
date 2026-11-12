@@ -2347,6 +2347,73 @@ const EXTRA_GERECHTEN = [
       "IJs 5 à 10 minuten vooraf uit de diepvries halen zodat je mooie bollen kunt scheppen"
     ],
     bereiding:"Room, melk en suiker in een pannetje tegen de kook aan brengen.\nVan het vuur halen, de gehakte chocolade erbij en 1 minuut laten staan.\nVanuit het midden glad roeren tot een glanzende saus.\nBoter en een snuifje zout erdoor roeren, eventueel de cognac of Grand Marnier.\nIs de saus te dik, een scheutje warme melk toevoegen. Warm houden au bain-marie (niet laten koken).\nIn elke koude coupe twee of drie bollen vanille-ijs scheppen.\nEen toef slagroom erop, amandelschilfers of een koekje erbij.\nDe warme chocoladesaus apart in een kannetje serveren, zodat iedereen zelf giet.\nTip: de saus kan een dag vooraf gemaakt worden en zacht opgewarmd au bain-marie.",
+    foto:""},
+  {id:"g-garnaalballetjes", naam:"Garnaalballetjes (hapje bij de cava)", categorie:"sharing",
+    ingredienten:[
+      "12 mini garnaalkroketjes (gekocht, diepvries of vers van de traiteur)",
+      "Frituurolie (alleen als het etiket frituren vraagt)",
+      "1 citroen (in partjes)",
+      "Verse platte peterselie",
+      "Mayonaise of cocktailsaus om in te dippen"
+    ],
+    voorbereiding:[
+      "Kroketjes tijdig uit de diepvries halen als het etiket dat vraagt",
+      "Citroen in partjes snijden",
+      "Peterselie plukken",
+      "Dipsaus in een klein kommetje zetten"
+    ],
+    bereiding:"Kroketjes bakken of frituren volgens het etiket tot ze goudbruin en heet zijn.\\nOp keukenpapier laten uitlekken.\\nMeteen serveren met een partje citroen en de dipsaus.",
+    foto:""},
+  {id:"g-bisque-tasje", naam:"Tasje garnalenbisque (aankoop)", categorie:"sharing",
+    ingredienten:[
+      "Garnalenbisque (gekocht), ca. 20 cl per persoon: 1 pak of pot van 40 tot 50 cl",
+      "2 el room of crème fraîche (afwerking, optioneel)",
+      "Bieslook (optioneel)",
+      "Scheutje cognac (optioneel)"
+    ],
+    voorbereiding:[
+      "Tasjes of kopjes in warm water voorverwarmen"
+    ],
+    bereiding:"Bisque zachtjes opwarmen, niet laten koken.\\nEventueel een scheutje cognac erdoor.\\nIn de voorverwarmde tasjes gieten en afwerken met een lepeltje room en wat bieslook.\\nMeteen serveren.",
+    foto:""},
+  {id:"g-mosseltjes-kruidenboter-pijnboompitten", naam:"Mosseltjes met kruidenboter, pijnboompitten en soldaatjes", categorie:"sharing",
+    ingredienten:[
+      "500 g verse mosselen (ca. 7 tot 8 per persoon)",
+      "60 g zachte boter",
+      "2 teentjes look",
+      "1 bosje platte peterselie",
+      "30 g pijnboompitten",
+      "1 sjalot",
+      "5 cl droge witte wijn",
+      "1/2 citroen",
+      "Zwarte peper",
+      "4 sneetjes witbrood of stokbrood voor soldaatjes",
+      "Boter of olijfolie om de soldaatjes te roosteren"
+    ],
+    voorbereiding:[
+      "Mosselen spoelen, baardjes verwijderen, open of gebroken exemplaren weggooien",
+      "Mosselen met sjalot en witte wijn 3 à 4 minuten afgedekt openstomen, laten afkoelen en dichte exemplaren weggooien",
+      "Pijnboompitten droog goudbruin roosteren in een pan",
+      "Look en peterselie fijnhakken",
+      "Kruidenboter mengen: boter, look, peterselie, peper, citroensap en de helft van de grof gehakte pijnboompitten",
+      "Brood in soldaatjes (repen van 1,5 cm) snijden"
+    ],
+    bereiding:"Bovenste schelp verwijderen en de mossel in de onderste schelp laten liggen.\\nOp elke mossel een klontje kruidenboter en wat pijnboompitten leggen.\\nMosselen op een ovenplaat 3 à 5 minuten onder de grill tot de boter borrelt. Goed in het oog houden.\\nSoldaatjes in wat boter of olijfolie goudbruin roosteren.\\nMeteen serveren, met de soldaatjes om de kruidenboter op te dopen.",
+    foto:""},
+  {id:"g-burrata-dip", naam:"Burrata dip met soldaatjes", categorie:"sharing",
+    ingredienten:[
+      "1 burrata (125 g)",
+      "2 el olijfolie extra vierge",
+      "Zeste van 1/2 citroen",
+      "Zwarte peper en fleur de sel",
+      "Basilicum of chilivlokken (optioneel)",
+      "Stokbrood of witbrood voor soldaatjes"
+    ],
+    voorbereiding:[
+      "Burrata een half uur vooraf uit de koelkast halen",
+      "Brood in soldaatjes snijden en roosteren"
+    ],
+    bereiding:"Burrata in een kommetje openscheuren en de romige binnenkant losroeren met olijfolie, citroenzeste, peper en zout.\\nAfwerken met een draadje olijfolie en eventueel basilicum of chilivlokken.\\nServeren met warme, geroosterde soldaatjes.",
     foto:""}
 ];
 
@@ -2644,7 +2711,10 @@ function seedWijnenBibIfEmpty(){
 const WIJN_IMPORT_KEY = "dineetjes_wijn_import_v1";
 const EXTRA_WIJNEN = [
   {id:"wb-capcanes-sense-cap", naam:"Cava Brut Capçanes Sense Cap", prijs:13.95, regio:"Macabeo, xarel·lo, parellada; Catalonië (DO Cava)", ervaring:"Appel, citrus en een toets venkel, 16 tot 22 maanden op de gist. Bedoeld bij de carpaccio van Sint-Jakobsvruchten.", score:0},
-  {id:"wb-juve-camps-rdf-magnum", naam:"Juvé & Camps Reserva de la Familia Brut Nature, magnum", prijs:47.95, regio:"Gran Reserva, DO Cava (Penedès)", ervaring:"Magnum 1,5 l (wijnimport.be). 36 maanden rijping, brut nature. Doorschenken bij aperitief en carpaccio van Sint-Jakobsvruchten. Vooraf 4 à 5 uur koelen, schenken op 8 à 10 °C.", score:0}
+  {id:"wb-juve-camps-rdf-magnum", naam:"Juvé & Camps Reserva de la Familia Brut Nature, magnum", prijs:47.95, regio:"Gran Reserva, DO Cava (Penedès)", ervaring:"Magnum 1,5 l (wijnimport.be). 36 maanden rijping, brut nature. Doorschenken bij aperitief en carpaccio van Sint-Jakobsvruchten. Vooraf 4 à 5 uur koelen, schenken op 8 à 10 °C.", score:0},
+  {id:"wb-manigand-cote-de-brouilly", naam:"Côte de Brouilly Domaine Lionel Manigand 2024", prijs:10.99, regio:"Gamay, Beaujolais (AOC Côte de Brouilly)", ervaring:"Gekocht bij Delhaize. Bedoeld bij coq au vin. Serveren op 14 tot 16 °C en een kwartier laten openstaan.", score:0},
+  {id:"wb-juve-camps-rdf-75cl", naam:"Juvé & Camps Gran Reserva de la Familia Brut Nature", prijs:18.95, regio:"Gran Reserva, DO Cava (Penedès)", ervaring:"Zes flessen bij Best Bottles (€113,70). Eerste slok vreemd, na even open lekker en complexer, geen makkelijke drinker. Past bij zout, vis en schaaldieren. Schenken op 8 tot 10 °C in een wit wijnglas.", score:0},
+  {id:"wb-andres-alonso-verdejo-albillo", naam:"Andrés Alonso Verdejo-Albillo", prijs:7.50, regio:"Verdejo, Albillo; Castilla y León (Vino de la Tierra)", ervaring:"Gekocht bij Xtra, geproefd en lekker gevonden. Andreas Larsson gaf de jaargang 2024 91/100. Bedoeld bij scampi met Griekse pasta. Goed koud serveren, 8 tot 10 °C.", score:0}
 ];
 function importExtraWijnen(){
   let gedaan = [];
